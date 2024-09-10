@@ -35,11 +35,15 @@ function isLatvianHoliday(date: Date): boolean {
 interface CustomSchedulerProps {
   employees: Employee[];
   initialEvents: SchedulerEvent[];
+  cellColors: Record<string, string>;
+  setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   employees,
   initialEvents,
+  cellColors,
+  setCellColors,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [cellWidth, setCellWidth] = useState(0);
@@ -203,6 +207,8 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
             handleCellHover={handleCellHover}
             handleCellLeave={handleCellLeave}
             renderGroupSeparator={renderGroupSeparator}
+            cellColors={cellColors}
+            setCellColors={setCellColors}
           />
         </div>
       </div>

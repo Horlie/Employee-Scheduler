@@ -13,8 +13,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
         <Image
           src="/calendar-background.svg"
           alt="Calendar Background"
-          layout="fill"
-          objectFit="cover"
+          fill
+          style={{ objectFit: "cover" }}
         />
       </div>
 

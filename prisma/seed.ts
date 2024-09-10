@@ -67,6 +67,32 @@ async function main() {
 
     console.log(`Upserted user: ${user.email}`)
   }
+
+  // Add some example availability data
+  const employees = await prisma.employee.findMany()
+  for (const employee of employees) {
+    await prisma.employeeAvailability.createMany({
+      data: [
+        {
+          employeeId: employee.id,
+          date: new Date('2024-05-01'),
+          status: 'unavailable',
+        },
+        {
+          employeeId: employee.id,
+          date: new Date('2024-05-02'),
+          status: 'preferable',
+        },
+        {
+          employeeId: employee.id,
+          date: new Date('2024-05-03'),
+          status: 'unreachable',
+        },
+      ],
+    })
+  }
+
+  console.log('Seed data inserted')
 }
 
 main()

@@ -16,6 +16,8 @@ interface CalendarGridProps {
   handleCellHover: (day: number, employeeId: string, group: string) => void;
   handleCellLeave: () => void;
   renderGroupSeparator: (text: string) => JSX.Element;
+  cellColors: Record<string, string>;
+  setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -31,13 +33,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   handleCellHover,
   handleCellLeave,
   renderGroupSeparator,
+  cellColors,
+  setCellColors,
 }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const [cellColors, setCellColors] = useState<Record<string, string>>({});
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,11 +62,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const handleCellClick = (
     employee: Employee,
     date: Date,
-    event: React.MouseEvent
+    event: React.MouseEvent<HTMLDivElement>
   ) => {
+    const cellElement = event.currentTarget;
+    const rect = cellElement.getBoundingClientRect();
+    const scrollTop = window.scrollY;
+    const scrollLeft = window.scrollX;
     setSelectedEmployee(employee);
     setSelectedDate(date);
-    setTooltipPosition({ top: event.clientY, left: event.clientX });
+    setTooltipPosition({
+      top: rect.top + scrollTop,
+      left: rect.left + scrollLeft + rect.width / 2,
+    });
   };
 
   const handleCloseTooltip = () => {
@@ -71,27 +81,71 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     setSelectedDate(null);
   };
 
-  const handleAction = (
+  const handleAction = async (
     action: "unavailable" | "unreachable" | "preferable" | "delete"
   ) => {
     if (selectedEmployee && selectedDate) {
       const cellKey = `${selectedEmployee.id}-${selectedDate.toISOString()}`;
-      let newColor = "";
-      switch (action) {
-        case "unavailable":
-          newColor = "bg-yellow-200";
-          break;
-        case "unreachable":
-          newColor = "bg-red-200";
-          break;
-        case "preferable":
-          newColor = "bg-green-200";
-          break;
-        case "delete":
-          newColor = "";
-          break;
+
+      if (action === "delete") {
+        try {
+          const response = await fetch(
+            `/api/employee-availability?employeeId=${
+              selectedEmployee.id
+            }&date=${selectedDate.toISOString()}`,
+            {
+              method: "DELETE",
+            }
+          );
+          if (response.ok) {
+            setCellColors((prev) => {
+              const newColors = { ...prev };
+              delete newColors[cellKey];
+              return newColors;
+            });
+          } else {
+            console.error("Failed to delete availability");
+          }
+        } catch (error) {
+          console.error("Error deleting availability:", error);
+        }
+      } else {
+        let newColor = "";
+        let status = "";
+        switch (action) {
+          case "unavailable":
+            newColor = "bg-yellow-200";
+            status = "unavailable";
+            break;
+          case "unreachable":
+            newColor = "bg-red-200";
+            status = "unreachable";
+            break;
+          case "preferable":
+            newColor = "bg-green-200";
+            status = "preferable";
+            break;
+        }
+
+        try {
+          const response = await fetch("/api/employee-availability", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              employeeId: selectedEmployee.id,
+              date: selectedDate.toISOString(),
+              status,
+            }),
+          });
+          if (response.ok) {
+            setCellColors((prev) => ({ ...prev, [cellKey]: newColor }));
+          } else {
+            console.error("Failed to update availability");
+          }
+        } catch (error) {
+          console.error("Error updating availability:", error);
+        }
       }
-      setCellColors((prev) => ({ ...prev, [cellKey]: newColor }));
     }
     handleCloseTooltip();
   };
@@ -200,7 +254,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             <div key={employee.id} className="flex">
               {days.map((day, dayIndex) => {
                 const cellKey = `${employee.id}-${day.toISOString()}`;
-                const cellColor = cellColors[cellKey] || "";
+                const cellColor = cellColors[cellKey] || "bg-white";
                 return (
                   <React.Fragment key={`${employee.id}-${dayIndex}`}>
                     {day.getDay() === 1 && (
@@ -209,21 +263,20 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                     <div
                       className={`flex-shrink-0 border-r border-b border-gray-300 
                         ${
-                          isToday(day)
+                          cellColor !== "bg-white"
+                            ? cellColor
+                            : isToday(day)
                             ? "bg-indigo-100"
-                            : `${
-                                [0, 6].includes(day.getDay())
-                                  ? "bg-blue-50"
-                                  : "bg-white"
-                              }`
-                        } 
+                            : [0, 6].includes(day.getDay())
+                            ? "bg-blue-50"
+                            : cellColor
+                        }
                         ${
                           hoveredDay === day.getDate() &&
                           hoveredEmployee === employee.id
                             ? "z-[49]"
                             : ""
-                        }
-                        ${cellColor}`}
+                        }`}
                       style={{
                         width: `${cellWidth}px`,
                         height: "46px",

@@ -17,9 +17,20 @@ model User {
 }
 
 model Employee {
-  id     Int    @id @default(autoincrement())
-  name   String
-  role   String
-  userId Int
-  user   User   @relation(fields: [userId], references: [id])
+  id           Int                    @id @default(autoincrement())
+  name         String
+  role         String
+  userId       Int
+  user         User                   @relation(fields: [userId], references: [id])
+  availability EmployeeAvailability[]
+}
+
+model EmployeeAvailability {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  date       DateTime
+  status     String   // Can be 'unavailable', 'unreachable', or 'preferable'
+
+  @@unique([employeeId, date])
 }
