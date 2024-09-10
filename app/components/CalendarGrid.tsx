@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Employee } from "../types/scheduler";
 import { getWeek } from "date-fns";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
@@ -36,15 +36,64 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     null
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [cellColors, setCellColors] = useState<Record<string, string>>({});
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
-  const handleCellClick = (employee: Employee, date: Date) => {
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        tooltipRef.current &&
+        !tooltipRef.current.contains(event.target as Node)
+      ) {
+        handleCloseTooltip();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleCellClick = (
+    employee: Employee,
+    date: Date,
+    event: React.MouseEvent
+  ) => {
     setSelectedEmployee(employee);
     setSelectedDate(date);
+    setTooltipPosition({ top: event.clientY, left: event.clientX });
   };
 
   const handleCloseTooltip = () => {
     setSelectedEmployee(null);
     setSelectedDate(null);
+  };
+
+  const handleAction = (
+    action: "unavailable" | "unreachable" | "preferable" | "delete"
+  ) => {
+    if (selectedEmployee && selectedDate) {
+      const cellKey = `${selectedEmployee.id}-${selectedDate.toISOString()}`;
+      let newColor = "";
+      switch (action) {
+        case "unavailable":
+          newColor = "bg-yellow-200";
+          break;
+        case "unreachable":
+          newColor = "bg-red-200";
+          break;
+        case "preferable":
+          newColor = "bg-green-200";
+          break;
+        case "delete":
+          newColor = "";
+          break;
+      }
+      setCellColors((prev) => ({ ...prev, [cellKey]: newColor }));
+    }
+    handleCloseTooltip();
   };
 
   const renderDayHeaders = (currentGroup: string) => (
@@ -149,13 +198,16 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           )}
           {employees.map((employee) => (
             <div key={employee.id} className="flex">
-              {days.map((day, dayIndex) => (
-                <React.Fragment key={`${employee.id}-${dayIndex}`}>
-                  {day.getDay() === 1 && (
-                    <div className="flex-shrink-0 w-6 border-r border-gray-300"></div>
-                  )}
-                  <div
-                    className={`flex-shrink-0 border-r border-b border-gray-300 
+              {days.map((day, dayIndex) => {
+                const cellKey = `${employee.id}-${day.toISOString()}`;
+                const cellColor = cellColors[cellKey] || "";
+                return (
+                  <React.Fragment key={`${employee.id}-${dayIndex}`}>
+                    {day.getDay() === 1 && (
+                      <div className="flex-shrink-0 w-6 border-r border-gray-300"></div>
+                    )}
+                    <div
+                      className={`flex-shrink-0 border-r border-b border-gray-300 
                         ${
                           isToday(day)
                             ? "bg-indigo-100"
@@ -165,39 +217,33 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                                   : "bg-white"
                               }`
                         } 
-                      ${
-                        hoveredDay === day.getDate() &&
-                        hoveredEmployee === employee.id
-                          ? "z-[49]"
-                          : ""
-                      }`}
-                    style={{
-                      width: `${cellWidth}px`,
-                      height: "46px",
-                      boxShadow:
-                        hoveredDay === day.getDate() &&
-                        hoveredEmployee === employee.id
-                          ? "0 0 12px 1px lightblue"
-                          : "none",
-                    }}
-                    onMouseEnter={() =>
-                      handleCellHover(day.getDate(), employee.id, role)
-                    }
-                    onMouseLeave={handleCellLeave}
-                    onClick={() => handleCellClick(employee, day)}
-                  >
-                    {/* Event rendering would go here */}
-                    {selectedEmployee?.id === employee.id &&
-                      selectedDate?.getTime() === day.getTime() && (
-                        <EmployeeEventTooltip
-                          employee={selectedEmployee}
-                          date={selectedDate}
-                          onClose={handleCloseTooltip}
-                        />
-                      )}
-                  </div>
-                </React.Fragment>
-              ))}
+                        ${
+                          hoveredDay === day.getDate() &&
+                          hoveredEmployee === employee.id
+                            ? "z-[49]"
+                            : ""
+                        }
+                        ${cellColor}`}
+                      style={{
+                        width: `${cellWidth}px`,
+                        height: "46px",
+                        boxShadow:
+                          hoveredDay === day.getDate() &&
+                          hoveredEmployee === employee.id
+                            ? "0 0 12px 1px lightblue"
+                            : "none",
+                      }}
+                      onMouseEnter={() =>
+                        handleCellHover(day.getDate(), employee.id, role)
+                      }
+                      onMouseLeave={handleCellLeave}
+                      onClick={(e) => handleCellClick(employee, day, e)}
+                    >
+                      {/* Event rendering would go here */}
+                    </div>
+                  </React.Fragment>
+                );
+              })}
             </div>
           ))}
           {renderDayFooter(role)}
@@ -220,6 +266,16 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         </>
       )}
       {renderEmployeeRows()}
+      {selectedEmployee && selectedDate && (
+        <div ref={tooltipRef}>
+          <EmployeeEventTooltip
+            employee={selectedEmployee}
+            date={selectedDate}
+            onAction={handleAction}
+            position={tooltipPosition}
+          />
+        </div>
+      )}
     </div>
   );
 };
