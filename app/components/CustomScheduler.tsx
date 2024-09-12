@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Employee, SchedulerEvent } from "../types/scheduler";
-import { getWeek } from "date-fns";
+import { Employee, EmployeeAvailability } from "../types/scheduler";
 import SettingsModal from "./SettingsModal";
 import SchedulerHeader from "./SchedulerHeader";
 import EmployeeColumn from "./EmployeeColumn";
@@ -27,23 +26,23 @@ function isLatvianHoliday(date: Date): boolean {
     { month: 11, day: 31 }, // New Year's Eve
   ];
 
-  return holidays.some(
-    (holiday) => holiday.month === month && holiday.day === day
-  );
+  return holidays.some((holiday) => holiday.month === month && holiday.day === day);
 }
 
 interface CustomSchedulerProps {
   employees: Employee[];
-  initialEvents: SchedulerEvent[];
   cellColors: Record<string, string>;
   setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  availabilityData: EmployeeAvailability[];
+  setAvailabilityData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   employees,
-  initialEvents,
   cellColors,
   setCellColors,
+  availabilityData,
+  setAvailabilityData,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [cellWidth, setCellWidth] = useState(0);
@@ -82,12 +81,8 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         const containerWidth = gridRef.current.offsetWidth;
         const employeeColumnWidth = 192; // 48px * 4
         const weekDividersWidth = Math.ceil(days.length / 7) * 24;
-        const availableWidth =
-          containerWidth - employeeColumnWidth - weekDividersWidth;
-        const newCellWidth = Math.max(
-          Math.floor(availableWidth / days.length),
-          50
-        ); // Set a minimum width
+        const availableWidth = containerWidth - employeeColumnWidth - weekDividersWidth;
+        const newCellWidth = Math.max(Math.floor(availableWidth / days.length), 50); // Set a minimum width
         setCellWidth(newCellWidth);
       }
     };
@@ -100,15 +95,11 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
 
   // Helper functions
   const handlePrevMonth = () => {
-    setCurrentDate(
-      (prevDate) => new Date(prevDate.getFullYear(), prevDate.getMonth() - 1, 1)
-    );
+    setCurrentDate((prevDate) => new Date(prevDate.getFullYear(), prevDate.getMonth() - 1, 1));
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(
-      (prevDate) => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1)
-    );
+    setCurrentDate((prevDate) => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1));
   };
 
   const handleToday = () => {
@@ -120,14 +111,11 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     return date.toDateString() === today.toDateString();
   };
 
-  const handleCellHover = useCallback(
-    (day: number, employeeId: string, group: string) => {
-      setHoveredDay(day);
-      setHoveredEmployee(employeeId);
-      setHoveredGroup(group);
-    },
-    []
-  );
+  const handleCellHover = useCallback((day: number, employeeId: string, group: string) => {
+    setHoveredDay(day);
+    setHoveredEmployee(employeeId);
+    setHoveredGroup(group);
+  }, []);
 
   const handleCellLeave = useCallback(() => {
     setHoveredDay(null);
@@ -147,9 +135,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   const renderGroupSeparator = (text: string) => (
     <div className="h-[46px] flex items-center bg-gray-100">
       <div className="flex-grow flex items-center justify-center">
-        <span className="text-xl tracking-widest font-normal text-gray-400 uppercase">
-          {text}
-        </span>
+        <span className="text-xl tracking-widest font-normal text-gray-400 uppercase">{text}</span>
       </div>
     </div>
   );
@@ -209,13 +195,12 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
             renderGroupSeparator={renderGroupSeparator}
             cellColors={cellColors}
             setCellColors={setCellColors}
+            availabilityData={availabilityData}
+            setAvailabilityData={setAvailabilityData}
           />
         </div>
       </div>
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={handleCloseSettingsModal}
-      />
+      <SettingsModal isOpen={isSettingsModalOpen} onClose={handleCloseSettingsModal} />
     </div>
   );
 };

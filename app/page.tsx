@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Employee } from "./types/scheduler";
+import { Employee, EmployeeAvailability } from "./types/scheduler";
 import Navigation from "./components/Navigation";
 import LandingPage from "./components/LandingPage";
 import LoginModal from "./components/LoginModal";
@@ -26,7 +26,7 @@ export default function Home() {
       fetchEmployees();
     }
   }, []);
-
+  const [allAvailability, setAllAvailability] = useState<EmployeeAvailability[]>([]);
   const fetchEmployees = async () => {
     setIsLoading(true);
     try {
@@ -37,25 +37,25 @@ export default function Home() {
         setEmployees(data.employees);
 
         // Fetch availability for all employees
-        const availabilityPromises = data.employees.map(
-          async (employee: Employee) => {
-            const availabilityResponse = await fetch(
-              `/api/employee-availability?employeeId=${employee.id}`
-            );
-            if (availabilityResponse.ok) {
-              const availabilityData = await availabilityResponse.json();
-              return availabilityData.availability;
-            }
-            return [];
+        const availabilityPromises = data.employees.map(async (employee: Employee) => {
+          const availabilityResponse = await fetch(
+            `/api/employee-availability?employeeId=${employee.id}`
+          );
+          if (availabilityResponse.ok) {
+            const availabilityData = await availabilityResponse.json();
+            return availabilityData.availability;
           }
-        );
+          return [];
+        });
 
-        const allAvailability = await Promise.all(availabilityPromises);
-
+        const allAvailability: EmployeeAvailability[] = await Promise.all(availabilityPromises);
+        setAllAvailability(allAvailability);
         // Update cell colors based on fetched availability
         const newCellColors: Record<string, string> = {};
-        allAvailability.flat().forEach((availability: any) => {
-          const cellKey = `${availability.employeeId}-${availability.date}`;
+        allAvailability.flat().forEach((availability: EmployeeAvailability) => {
+          const cellKey = `${availability.employeeId}-${
+            new Date(availability.startDate).toISOString().split("T")[0]
+          }`;
           switch (availability.status) {
             case "unavailable":
               newCellColors[cellKey] = "bg-yellow-200";
@@ -100,9 +100,10 @@ export default function Home() {
         <div className="flex-grow overflow-y-auto rounded-2xl border-2 border-gray-300 mt-10 bg-gray-100 overflow-x-auto">
           <CustomScheduler
             employees={employees}
-            initialEvents={[]}
             cellColors={cellColors}
             setCellColors={setCellColors}
+            availabilityData={allAvailability.flat().filter(Boolean)}
+            setAvailabilityData={setAllAvailability}
           />
         </div>
       ) : (

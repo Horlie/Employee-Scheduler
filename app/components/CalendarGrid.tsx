@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Employee } from "../types/scheduler";
-import { getWeek } from "date-fns";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Employee, EmployeeAvailability } from "../types/scheduler";
+import { getWeek, format } from "date-fns";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
 
 interface CalendarGridProps {
@@ -18,6 +18,8 @@ interface CalendarGridProps {
   renderGroupSeparator: (text: string) => JSX.Element;
   cellColors: Record<string, string>;
   setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  availabilityData: EmployeeAvailability[];
+  setAvailabilityData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -35,20 +37,17 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   renderGroupSeparator,
   cellColors,
   setCellColors,
+  availabilityData,
+  setAvailabilityData,
 }) => {
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
-    null
-  );
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        tooltipRef.current &&
-        !tooltipRef.current.contains(event.target as Node)
-      ) {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
         handleCloseTooltip();
       }
     };
@@ -82,17 +81,28 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   const handleAction = async (
-    action: "unavailable" | "unreachable" | "preferable" | "delete"
+    action: "unavailable" | "unreachable" | "preferable" | "delete",
+    startDate: Date,
+    finishDate: Date
   ) => {
     if (selectedEmployee && selectedDate) {
-      const cellKey = `${selectedEmployee.id}-${selectedDate.toISOString()}`;
+      const cellKey = `${selectedEmployee.id}-${
+        localToUTC(selectedDate).toISOString().split("T")[0]
+      }`;
 
       if (action === "delete") {
         try {
+          const availability = availabilityData.find(
+            (a: EmployeeAvailability) =>
+              a.employeeId === selectedEmployee.id &&
+              new Date(a.startDate).toDateString() === selectedDate.toDateString()
+          );
+          const startDate = availability ? new Date(availability.startDate) : selectedDate;
+          const finishDate = availability ? new Date(availability.finishDate) : selectedDate;
           const response = await fetch(
             `/api/employee-availability?employeeId=${
               selectedEmployee.id
-            }&date=${selectedDate.toISOString()}`,
+            }&startDate=${startDate.toISOString()}&finishDate=${finishDate.toISOString()}`,
             {
               method: "DELETE",
             }
@@ -102,6 +112,19 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               const newColors = { ...prev };
               delete newColors[cellKey];
               return newColors;
+            });
+
+            setAvailabilityData((prev) => {
+              return prev
+                .flat()
+                .filter(
+                  (a: EmployeeAvailability) =>
+                    !(
+                      a.employeeId === selectedEmployee.id &&
+                      a.startDate === startDate.toISOString() &&
+                      a.finishDate === finishDate.toISOString()
+                    )
+                );
             });
           } else {
             console.error("Failed to delete availability");
@@ -133,12 +156,25 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               employeeId: selectedEmployee.id,
-              date: selectedDate.toISOString(),
+              startDate: startDate.toISOString(),
+              finishDate: finishDate.toISOString(),
               status,
             }),
           });
           if (response.ok) {
-            setCellColors((prev) => ({ ...prev, [cellKey]: newColor }));
+            setCellColors((prev) => ({
+              ...prev,
+              [cellKey]: newColor,
+            }));
+
+            const newAvailability: EmployeeAvailability = {
+              id: Date.now(), // Generate a temporary ID
+              employeeId: selectedEmployee.id,
+              startDate: localToUTC(startDate).toISOString(),
+              finishDate: localToUTC(finishDate).toISOString(),
+              status,
+            };
+            setAvailabilityData((prev) => [...prev, newAvailability]);
           } else {
             console.error("Failed to update availability");
           }
@@ -212,8 +248,11 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           )}
           <div
             className={`flex-shrink-0 text-center py-1 text-xs border-r border-t border-b border-gray-300 relative
-            ${isToday(day) ? "bg-indigo-100" : ""} 
-            ${[0, 6].includes(day.getDay()) ? "bg-blue-50" : "bg-white"}
+            ${
+              isToday(day)
+                ? "bg-indigo-100"
+                : `${[0, 6].includes(day.getDay()) ? "bg-blue-50" : "bg-white"}`
+            }
             ${
               hoveredDay === day.getDate() && hoveredGroup === currentGroup
                 ? "bg-lightblue z-[49]"
@@ -240,6 +279,54 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     </div>
   );
 
+  const renderAvailabilityTile = (employee: Employee, day: Date) => {
+    const cellKey = `${employee.id}-${localToUTC(day).toISOString().split("T")[0]}`;
+    const cellColor =
+      cellColors[cellKey] ||
+      `${
+        isToday(day)
+          ? "bg-indigo-100"
+          : `${[0, 6].includes(day.getDay()) ? "bg-blue-50" : "bg-white"}`
+      }`;
+
+    const availability = availabilityData.find(
+      (a: EmployeeAvailability) =>
+        a.employeeId === employee.id && new Date(a.startDate).toDateString() === day.toDateString()
+    );
+    const formatTime = (date: Date) => format(new Date(localToUTCPlus(date)), "HH:mm");
+
+    const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
+
+    return (
+      <div
+        className={`flex-shrink-0 border-r border-b border-gray-300 ${cellColor} ${
+          isHovered ? "z-[49]" : ""
+        }`}
+        style={{
+          width: `${cellWidth}px`,
+          height: "46px",
+          boxShadow: isHovered ? "0 0 12px 1px lightblue" : "none",
+        }}
+        onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), employee.role)}
+        onMouseLeave={handleCellLeave}
+        onClick={(e) => handleCellClick(employee, day, e)}
+      >
+        {availability && (
+          <div className="w-full h-full flex items-center justify-center text-xs px-1">
+            {localToUTCPlus(new Date(availability.startDate)).getHours() === 0 &&
+            localToUTCPlus(new Date(availability.startDate)).getMinutes() === 0 &&
+            localToUTCPlus(new Date(availability.finishDate)).getHours() === 23 &&
+            localToUTCPlus(new Date(availability.finishDate)).getMinutes() === 59
+              ? "All Day"
+              : `${formatTime(new Date(availability.startDate))} ${formatTime(
+                  new Date(availability.finishDate)
+                )}`}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderEmployeeRows = () => (
     <div>
       {groupedEmployees.map(([role, employees], groupIndex) => (
@@ -252,51 +339,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           )}
           {employees.map((employee) => (
             <div key={employee.id} className="flex">
-              {days.map((day, dayIndex) => {
-                const cellKey = `${employee.id}-${day.toISOString()}`;
-                const cellColor = cellColors[cellKey] || "bg-white";
-                return (
-                  <React.Fragment key={`${employee.id}-${dayIndex}`}>
-                    {day.getDay() === 1 && (
-                      <div className="flex-shrink-0 w-6 border-r border-gray-300"></div>
-                    )}
-                    <div
-                      className={`flex-shrink-0 border-r border-b border-gray-300 
-                        ${
-                          cellColor !== "bg-white"
-                            ? cellColor
-                            : isToday(day)
-                            ? "bg-indigo-100"
-                            : [0, 6].includes(day.getDay())
-                            ? "bg-blue-50"
-                            : cellColor
-                        }
-                        ${
-                          hoveredDay === day.getDate() &&
-                          hoveredEmployee === employee.id
-                            ? "z-[49]"
-                            : ""
-                        }`}
-                      style={{
-                        width: `${cellWidth}px`,
-                        height: "46px",
-                        boxShadow:
-                          hoveredDay === day.getDate() &&
-                          hoveredEmployee === employee.id
-                            ? "0 0 12px 1px lightblue"
-                            : "none",
-                      }}
-                      onMouseEnter={() =>
-                        handleCellHover(day.getDate(), employee.id, role)
-                      }
-                      onMouseLeave={handleCellLeave}
-                      onClick={(e) => handleCellClick(employee, day, e)}
-                    >
-                      {/* Event rendering would go here */}
-                    </div>
-                  </React.Fragment>
-                );
-              })}
+              {days.map((day, dayIndex) => (
+                <React.Fragment key={`${employee.id}-${dayIndex}`}>
+                  {day.getDay() === 1 && (
+                    <div className="flex-shrink-0 w-6 border-r border-gray-300"></div>
+                  )}
+                  {renderAvailabilityTile(employee, day)}
+                </React.Fragment>
+              ))}
             </div>
           ))}
           {renderDayFooter(role)}
@@ -331,6 +381,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       )}
     </div>
   );
+};
+
+const localToUTC = (date: Date) => {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+};
+
+const localToUTCPlus = (date: Date) => {
+  return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
 };
 
 export default CalendarGrid;

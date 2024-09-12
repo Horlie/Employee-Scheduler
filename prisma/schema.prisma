@@ -29,8 +29,9 @@ model EmployeeAvailability {
   id         Int      @id @default(autoincrement())
   employeeId Int
   employee   Employee @relation(fields: [employeeId], references: [id])
-  date       DateTime
+  startDate  DateTime
+  finishDate DateTime
   status     String   // Can be 'unavailable', 'unreachable', or 'preferable'
 
-  @@unique([employeeId, date])
+  @@unique([employeeId, startDate])
 }

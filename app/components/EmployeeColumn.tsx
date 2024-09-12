@@ -31,12 +31,10 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
               <div
                 key={employee.id}
                 className={`flex items-center p-2 border-l border-b border-r border-gray-300 h-[46px]
-                  ${
-                    hoveredEmployee === employee.id ? "bg-lightblue z-[49]" : ""
-                  }`}
+                  ${hoveredEmployee === employee.id.toString() ? "bg-lightblue z-[49]" : ""}`}
                 style={{
                   boxShadow:
-                    hoveredEmployee === employee.id
+                    hoveredEmployee === employee.id.toString()
                       ? "0px 0px 10px 3px lightblue"
                       : "none",
                 }}

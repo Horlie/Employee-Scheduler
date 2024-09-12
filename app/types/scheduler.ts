@@ -1,8 +1,16 @@
 export interface Employee {
-  id: string;
+  id: number;
   name: string;
-  role: string;  // Add this line
-  // ... other properties ...
+  role: string;
+  availability?: EmployeeAvailability[];
+}
+
+export interface EmployeeAvailability {
+  id: number;
+  employeeId: number;
+  startDate: Date | string;
+  finishDate: Date | string;
+  status: string;
 }
 
 export interface SchedulerEvent {
