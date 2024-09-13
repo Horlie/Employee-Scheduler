@@ -113,7 +113,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               delete newColors[cellKey];
               return newColors;
             });
-
             setAvailabilityData((prev) => {
               return prev
                 .flat()
@@ -133,6 +132,42 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           console.error("Error deleting availability:", error);
         }
       } else {
+        const existingAvailability = availabilityData.find(
+          (a) =>
+            a.employeeId === selectedEmployee.id &&
+            new Date(a.startDate).toDateString() === selectedDate.toDateString()
+        );
+        if (existingAvailability) {
+          try {
+            const deleteResponse = await fetch(
+              `/api/employee-availability?employeeId=${selectedEmployee.id}&startDate=${existingAvailability.startDate}&finishDate=${existingAvailability.finishDate}`,
+              {
+                method: "DELETE",
+              }
+            );
+            if (deleteResponse.ok) {
+              setAvailabilityData((prev) => {
+                return prev
+                  .flat()
+                  .filter(
+                    (a: EmployeeAvailability) =>
+                      !(
+                        a.employeeId === selectedEmployee.id &&
+                        a.startDate === existingAvailability.startDate &&
+                        a.finishDate === existingAvailability.finishDate
+                      )
+                  );
+              });
+            }
+            if (!deleteResponse.ok) {
+              console.error("Failed to delete existing availability");
+              return;
+            }
+          } catch (error) {
+            console.error("Error deleting existing availability:", error);
+            return;
+          }
+        }
         let newColor = "";
         let status = "";
         switch (action) {
@@ -316,11 +351,15 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             {localToUTCPlus(new Date(availability.startDate)).getHours() === 0 &&
             localToUTCPlus(new Date(availability.startDate)).getMinutes() === 0 &&
             localToUTCPlus(new Date(availability.finishDate)).getHours() === 23 &&
-            localToUTCPlus(new Date(availability.finishDate)).getMinutes() === 59
-              ? "All Day"
-              : `${formatTime(new Date(availability.startDate))} ${formatTime(
+            localToUTCPlus(new Date(availability.finishDate)).getMinutes() === 59 ? (
+              <span className="text-gray-600 font-medium">All Day</span>
+            ) : (
+              <span className="text-gray-700 text-center">
+                {`${formatTime(new Date(availability.startDate))} ${formatTime(
                   new Date(availability.finishDate)
                 )}`}
+              </span>
+            )}
           </div>
         )}
       </div>
