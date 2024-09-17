@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
-import SettingsModal from "./SettingsModal";
 import SchedulerHeader from "./SchedulerHeader";
 import EmployeeColumn from "./EmployeeColumn";
 import CalendarGrid from "./CalendarGrid";
@@ -35,6 +34,8 @@ interface CustomSchedulerProps {
   setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   availabilityData: EmployeeAvailability[];
   setAvailabilityData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
+  showSettings?: boolean; // New prop
+  showTooltips?: boolean; // New prop
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
@@ -43,6 +44,8 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   setCellColors,
   availabilityData,
   setAvailabilityData,
+  showSettings = true, // Default to true
+  showTooltips = true, // Default to true
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [cellWidth, setCellWidth] = useState(0);
@@ -74,7 +77,6 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   };
 
   const groupedEmployees = groupEmployeesByRole(filteredEmployees);
-
   useEffect(() => {
     const updateCellWidth = () => {
       if (gridRef.current) {
@@ -88,8 +90,8 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     };
 
     updateCellWidth();
-    window.addEventListener("resize", updateCellWidth);
 
+    window.addEventListener("resize", updateCellWidth);
     return () => window.removeEventListener("resize", updateCellWidth);
   }, [days.length]);
 
@@ -125,10 +127,6 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
 
   const handleSettingsClick = () => {
     setIsSettingsModalOpen(true);
-  };
-
-  const handleCloseSettingsModal = () => {
-    setIsSettingsModalOpen(false);
   };
 
   // Render functions
@@ -171,6 +169,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         onNextMonth={handleNextMonth}
         onToday={handleToday}
         onSettingsClick={handleSettingsClick}
+        showSettings={showSettings}
       />
       <div className="flex justify-center bg-gray-100">
         <div className="flex max-w-full" ref={gridRef}>
@@ -197,10 +196,10 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
             setCellColors={setCellColors}
             availabilityData={availabilityData}
             setAvailabilityData={setAvailabilityData}
+            showTooltips={showTooltips}
           />
         </div>
       </div>
-      <SettingsModal isOpen={isSettingsModalOpen} onClose={handleCloseSettingsModal} />
     </div>
   );
 };

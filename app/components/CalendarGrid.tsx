@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { getWeek, format } from "date-fns";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
+import LoadingSpinner from "./LoadingSpinner";
 
 interface CalendarGridProps {
   groupedEmployees: [string, Employee[]][];
@@ -20,6 +21,7 @@ interface CalendarGridProps {
   setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   availabilityData: EmployeeAvailability[];
   setAvailabilityData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
+  showTooltips: boolean;
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -39,11 +41,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   setCellColors,
   availabilityData,
   setAvailabilityData,
+  showTooltips,
 }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -228,7 +232,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           {day.getDay() === 1 && (
             <div className="border-gray-300 w-6 relative bg-gray-100 flex-shrink-0">
               <div className="absolute top-0 left-0 w-6 h-20 flex items-center justify-center bg-gray-100 border-r border-gray-300">
-                <span className="transform -rotate-90 origin-center whitespace-nowrap text-xs text-gray-500">
+                <span className="transform -rotate-90 origin-center whitespace-nowrap text-xs text-gray-500 font-medium">
                   Week {getWeek(day)}
                 </span>
               </div>
@@ -275,7 +279,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           {day.getDay() === 1 && (
             <div className="border-gray-300 w-6 relative bg-gray-100 flex-shrink-0">
               <div className="absolute bottom-0 left-0 w-6 h-20 flex items-center justify-center bg-gray-100 border-r border-gray-300">
-                <span className="transform -rotate-90 origin-center whitespace-nowrap text-xs text-gray-500">
+                <span className="transform -rotate-90 origin-center whitespace-nowrap text-xs text-gray-500 font-medium">
                   Week {getWeek(day)}
                 </span>
               </div>
@@ -408,7 +412,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         </>
       )}
       {renderEmployeeRows()}
-      {selectedEmployee && selectedDate && (
+      {selectedEmployee && selectedDate && showTooltips && (
         <div ref={tooltipRef}>
           <EmployeeEventTooltip
             employee={selectedEmployee}
