@@ -1,5 +1,4 @@
-import { cp } from "fs";
-import React, { useState, useEffect, act } from "react";
+import React, { useState, useEffect } from "react";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -9,7 +8,7 @@ interface SettingsModalProps {
 
 interface Shift {
   id?: number;
-  userId: number; // Added userId to match Prisma model
+  userId: number;
   startTime: string;
   endTime: string;
   days: string[];
@@ -410,7 +409,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         )}
         {activeTab === "Other" && (
           // Other settings
-          <div className="flex flex-col mb-4">{/* Other settings inputs */}</div>
+          <div className="flex flex-col mb-4">
+            <p>Nothing in here yet</p>
+          </div>
         )}
         {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
         <div className="flex flex-row-reverse gap-2 mt-4 border-t border-gray-300 pt-4">

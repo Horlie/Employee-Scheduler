@@ -22,9 +22,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
 
-  const handleAction = (
-    action: "unavailable" | "unreachable" | "preferable" | "delete"
-  ) => {
+  const handleAction = (action: "unavailable" | "unreachable" | "preferable" | "delete") => {
     const startDate = new Date(date);
     const finishDate = new Date(date);
     if (isFullDay) {
@@ -34,7 +32,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
       const [startHours, startMinutes] = startTime.split(":").map(Number);
       const [endHours, endMinutes] = endTime.split(":").map(Number);
       startDate.setHours(startHours, startMinutes, 0, 0);
-      finishDate.setHours(endHours, endMinutes, 0, 0); // Changed from 59 to 0 seconds
+      finishDate.setHours(endHours, endMinutes, 0, 0);
     }
     onAction(action, startDate, finishDate);
   };

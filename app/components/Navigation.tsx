@@ -11,9 +11,9 @@ interface NavigationProps {
 }
 
 const activePageCss =
-  "border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium";
+  "border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-md font-medium";
 const inactivePageCss =
-  "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium";
+  "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-md font-medium";
 
 const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePage }) => {
   const [isLoading, setIsLoading] = useState(false);

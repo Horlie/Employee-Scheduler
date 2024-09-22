@@ -101,34 +101,37 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               a.employeeId === selectedEmployee.id &&
               new Date(a.startDate).toDateString() === selectedDate.toDateString()
           );
-          const startDate = availability ? new Date(availability.startDate) : selectedDate;
-          const finishDate = availability ? new Date(availability.finishDate) : selectedDate;
-          const response = await fetch(
-            `/api/employee-availability?employeeId=${
-              selectedEmployee.id
-            }&startDate=${startDate.toISOString()}&finishDate=${finishDate.toISOString()}`,
-            {
-              method: "DELETE",
+          if (availability) {
+            const startDate = availability ? new Date(availability.startDate) : selectedDate;
+            const finishDate = availability ? new Date(availability.finishDate) : selectedDate;
+            const response = await fetch(
+              `/api/employee-availability?employeeId=${
+                selectedEmployee.id
+              }&startDate=${startDate.toISOString()}&finishDate=${finishDate.toISOString()}`,
+              {
+                method: "DELETE",
+              }
+            );
+
+            if (response.ok) {
+              setCellColors((prev) => {
+                const newColors = { ...prev };
+                delete newColors[cellKey];
+                return newColors;
+              });
+              setAvailabilityData((prev) => {
+                return prev
+                  .flat()
+                  .filter(
+                    (a: EmployeeAvailability) =>
+                      !(
+                        a.employeeId === selectedEmployee.id &&
+                        a.startDate === startDate.toISOString() &&
+                        a.finishDate === finishDate.toISOString()
+                      )
+                  );
+              });
             }
-          );
-          if (response.ok) {
-            setCellColors((prev) => {
-              const newColors = { ...prev };
-              delete newColors[cellKey];
-              return newColors;
-            });
-            setAvailabilityData((prev) => {
-              return prev
-                .flat()
-                .filter(
-                  (a: EmployeeAvailability) =>
-                    !(
-                      a.employeeId === selectedEmployee.id &&
-                      a.startDate === startDate.toISOString() &&
-                      a.finishDate === finishDate.toISOString()
-                    )
-                );
-            });
           } else {
             console.error("Failed to delete availability");
           }
