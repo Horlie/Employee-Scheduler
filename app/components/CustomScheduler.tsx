@@ -5,6 +5,7 @@ import { Employee, EmployeeAvailability } from "../types/scheduler";
 import SchedulerHeader from "./SchedulerHeader";
 import EmployeeColumn from "./EmployeeColumn";
 import CalendarGrid from "./CalendarGrid";
+import SettingsModal from "./SettingsModal"; // Added import
 
 // Add this function near the top of the file, after imports
 function isLatvianHoliday(date: Date): boolean {
@@ -36,6 +37,7 @@ interface CustomSchedulerProps {
   setAvailabilityData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
   showSettings?: boolean; // New prop
   showTooltips?: boolean; // New prop
+  roles: string[];
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
@@ -46,6 +48,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   setAvailabilityData,
   showSettings = true, // Default to true
   showTooltips = true, // Default to true
+  roles,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [cellWidth, setCellWidth] = useState(0);
@@ -129,6 +132,10 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     setIsSettingsModalOpen(true);
   };
 
+  const handleSettingsClose = () => {
+    setIsSettingsModalOpen(false);
+  };
+
   // Render functions
   const renderGroupSeparator = (text: string) => (
     <div className="h-[46px] flex items-center bg-gray-100">
@@ -200,6 +207,8 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
           />
         </div>
       </div>
+
+      <SettingsModal isOpen={isSettingsModalOpen} onClose={handleSettingsClose} roles={roles} />
     </div>
   );
 };

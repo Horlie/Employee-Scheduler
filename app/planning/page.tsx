@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Navigation from "../components/Navigation";
 import CustomScheduler from "../components/CustomScheduler";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
@@ -94,11 +94,18 @@ export default function Planning() {
     router.replace("/");
   };
 
+  // Extract unique roles
+  const roles = useMemo(() => {
+    const roleSet = new Set<string>();
+    employees.forEach((employee) => roleSet.add(employee.role));
+    return Array.from(roleSet);
+  }, [employees]);
+
   return (
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="planning" />
       {isLoading && <LoadingSpinner />}
-      <div className="flex-grow overflow-y-auto rounded-2xl border-2 border-gray-300 mt-10 bg-gray-100 overflow-x-auto">
+      <div className="flex-grow overflow-y-auto rounded-2xl border-2 border-gray-300 mt-16 bg-gray-100 overflow-x-auto">
         <CustomScheduler
           employees={employees}
           cellColors={cellColors}
@@ -107,6 +114,7 @@ export default function Planning() {
           setAvailabilityData={setAvailabilityData}
           showSettings={true} // Ensure settings are shown
           showTooltips={true} // Ensure tooltips are enabled
+          roles={roles}
         />
       </div>
     </>

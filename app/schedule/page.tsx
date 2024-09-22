@@ -33,7 +33,7 @@ export default function Schedule() {
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="schedule" />
       {isLoading && <LoadingSpinner />}
-      <div className="flex-grow overflow-y-auto rounded-2xl border-2 border-gray-300 mt-10 bg-gray-100 overflow-x-auto">
+      <div className="flex-grow overflow-y-auto rounded-2xl border-2 border-gray-300 mt-16 bg-gray-100 overflow-x-auto">
         <CustomScheduler
           employees={employees}
           cellColors={{}}
@@ -42,6 +42,7 @@ export default function Schedule() {
           setAvailabilityData={() => {}}
           showSettings={false}
           showTooltips={false}
+          roles={[]}
         />
       </div>
     </>

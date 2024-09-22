@@ -14,6 +14,7 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   employees Employee[]
+  shifts    Shift[]    // Add this line to establish the relation
 }
 
 model Employee {
@@ -34,4 +35,13 @@ model EmployeeAvailability {
   status     String   // Can be 'unavailable', 'unreachable', or 'preferable'
 
   @@unique([employeeId, startDate])
+}
+
+model Shift {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  startTime String
+  endTime   String
+  days      String[]
 }
