@@ -44,5 +44,5 @@ model Shift {
   startTime String
   endTime   String
   days      String[]
-  role      String
+  role      String[]
 }

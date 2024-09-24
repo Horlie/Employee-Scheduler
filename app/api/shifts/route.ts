@@ -3,6 +3,14 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+interface ShiftInput {
+  userId: number;
+  startTime: string;
+  endTime: string;
+  days: string[];
+  roles: string[]; // Added roles to the input interface
+}
+
 export async function GET() {
   try {
     const shifts = await prisma.shift.findMany();
@@ -35,6 +43,7 @@ export async function POST(request: Request) {
             startTime: shift.startTime,
             endTime: shift.endTime,
             days: { set: shift.days },
+            role: { set: shift.role },
             user: { connect: { id: userId } },
           },
         });

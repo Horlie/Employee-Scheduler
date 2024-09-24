@@ -1,3 +1,4 @@
+// Start of Selection
 import React, { useState, useEffect } from "react";
 
 interface SettingsModalProps {
@@ -12,6 +13,7 @@ interface Shift {
   startTime: string;
   endTime: string;
   days: string[];
+  role: string[]; // Added roles to Shift
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles }) => {
@@ -26,6 +28,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<number>(0); // Added userId state
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]); // Added selectedRoles state
+  const [showAllShifts, setShowAllShifts] = useState(false); // {{ edit_1 }}
 
   useEffect(() => {
     if (isOpen) {
@@ -59,11 +63,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Added validation for days and roles
+    if (shiftDays.length < 1) {
+      setError("Please select at least one day.");
+      return;
+    }
+    if (selectedRoles.length < 1) {
+      setError("Please select at least one role.");
+      return;
+    }
+
     const newShift: Shift = {
       userId, // Include userId
       startTime,
       endTime,
       days: shiftDays,
+      role: selectedRoles, // Include selected roles
     };
     if (isFullDay) {
       newShift.startTime = "00:00";
@@ -71,6 +86,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     }
     setPendingShifts([...pendingShifts, newShift]);
     setActiveShifts([...activeShifts, newShift]);
+    setSelectedRoles([]); // Reset selectedRoles after submission
     // ... existing logic ...
   };
 
@@ -111,7 +127,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white rounded-lg p-6 w-150">
+      <div className="bg-white rounded-lg p-6 w-150 max-h-[90vh] overflow-y-auto">
         <div className="flex flex-row justify-center mb-4">
           <a
             href="#"
@@ -176,12 +192,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
 
             {roles
               .map((role) => (
-                <>
+                <React.Fragment key={role}>
                   <div className="flex-grow flex items-center justify-center mt-2">
-                    <span
-                      className="text-xl tracking-wide font-normal text-gray-500 uppercase"
-                      key={role}
-                    >
+                    <span className="text-xl tracking-wide font-normal text-gray-500 uppercase">
                       {role}
                     </span>
                   </div>
@@ -205,14 +218,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       placeholder="5"
                     />
                   </div>
-                </>
+                </React.Fragment>
               ))
               .reverse()}
           </>
         )}
         {activeTab === "Shifts" && (
           // Shifts specific settings
-          // Start Generation Here
           <div className="flex flex-col gap-4">
             <form onSubmit={handleSubmit} className="flex flex-col gap-2">
               <div className="flex flex-row items-center gap-4">
@@ -334,6 +346,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 </button>
               </div>
 
+              {/* Added roles selection tiles */}
+              <div className="flex flex-wrap gap-2 mt-4 justify-center border-t border-gray-300 pt-4">
+                {roles.map((role) => (
+                  <button
+                    key={role}
+                    type="button"
+                    className={`px-3 py-2 rounded ${
+                      selectedRoles.includes(role)
+                        ? "bg-indigo-200 text-indigo-700"
+                        : "bg-gray-50 text-gray-500"
+                    } hover:bg-indigo-200 hover:text-indigo-700 font-medium`}
+                    onClick={() => {
+                      if (selectedRoles.includes(role)) {
+                        setSelectedRoles(selectedRoles.filter((r) => r !== role));
+                      } else {
+                        setSelectedRoles([...selectedRoles, role]);
+                      }
+                    }}
+                  >
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </button>
+                ))}
+              </div>
+
               <div className="relative flex justify-center my-4 mt-10">
                 <hr className="w-full border-t border-gray-300" />
                 <button
@@ -358,51 +394,126 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
             <div className="mt-2">
               <h3 className="text-lg font-semibold mb-2">Active Shifts</h3>
               <div className="space-y-3">
-                {activeShifts.map((shift) => (
-                  <div key={shift.id} className="p-4 border border-gray-300 rounded">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">
-                          {shift.startTime === "00:00" && shift.endTime === "23:59" ? (
-                            <span>Full Day</span>
-                          ) : (
-                            <span>
-                              {shift.startTime} - {shift.endTime}
+                {!showAllShifts
+                  ? activeShifts.slice(0, 2).map((shift) => (
+                      <div key={shift.id} className="p-4 border border-gray-300 rounded">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-medium">
+                              {shift.startTime === "00:00" && shift.endTime === "23:59" ? (
+                                <span>Full Day</span>
+                              ) : (
+                                <span>
+                                  {shift.startTime} - {shift.endTime}
+                                </span>
+                              )}
                             </span>
-                          )}
-                        </span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {shift.days.map((day) => (
-                            <span key={day} className="px-2 py-1 bg-gray-200 text-xs rounded">
-                              {day}
-                            </span>
-                          ))}
+                            <div className="flex flex-wrap gap-1 my-1">
+                              {shift.role.map((role) => (
+                                <span
+                                  key={role}
+                                  className="px-2 py-1 bg-indigo-200 text-xs rounded"
+                                >
+                                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {shift.days.map((day) => (
+                                <span key={day} className="px-2 py-1 bg-gray-200 text-xs rounded">
+                                  {day}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <button
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => {
+                              if (shift.id) {
+                                handleRemove(shift.id);
+                              } else {
+                                setActiveShifts(
+                                  activeShifts.filter(
+                                    (_, index) => index !== activeShifts.indexOf(shift)
+                                  )
+                                );
+                                setPendingShifts(
+                                  pendingShifts.filter(
+                                    (_, index) => index !== pendingShifts.indexOf(shift)
+                                  )
+                                );
+                              }
+                            }}
+                          >
+                            Remove
+                          </button>
                         </div>
                       </div>
-                      <button
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => {
-                          if (shift.id) {
-                            handleRemove(shift.id);
-                          } else {
-                            setActiveShifts(
-                              activeShifts.filter(
-                                (_, index) => index !== activeShifts.indexOf(shift)
-                              )
-                            );
-                            setPendingShifts(
-                              pendingShifts.filter(
-                                (_, index) => index !== pendingShifts.indexOf(shift)
-                              )
-                            );
-                          }
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    ))
+                  : activeShifts.map((shift) => (
+                      <div key={shift.id} className="p-4 border border-gray-300 rounded">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-medium">
+                              {shift.startTime === "00:00" && shift.endTime === "23:59" ? (
+                                <span>Full Day</span>
+                              ) : (
+                                <span>
+                                  {shift.startTime} - {shift.endTime}
+                                </span>
+                              )}
+                            </span>
+                            <div className="flex flex-wrap gap-1 my-1">
+                              {shift.role.map((role) => (
+                                <span
+                                  key={role}
+                                  className="px-2 py-1 bg-indigo-200 text-xs rounded"
+                                >
+                                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {shift.days.map((day) => (
+                                <span key={day} className="px-2 py-1 bg-gray-200 text-xs rounded">
+                                  {day}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <button
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => {
+                              if (shift.id) {
+                                handleRemove(shift.id);
+                              } else {
+                                setActiveShifts(
+                                  activeShifts.filter(
+                                    (_, index) => index !== activeShifts.indexOf(shift)
+                                  )
+                                );
+                                setPendingShifts(
+                                  pendingShifts.filter(
+                                    (_, index) => index !== pendingShifts.indexOf(shift)
+                                  )
+                                );
+                              }
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                {activeShifts.length > 2 && (
+                  <button
+                    type="button"
+                    className="block mx-auto mt-2 px-4 py-2 text-indigo-600 bg-indigo-200 rounded-full border border-indigo-600 flex items-center justify-center focus:outline-none hover:bg-indigo-500 hover:text-white"
+                    onClick={() => setShowAllShifts(!showAllShifts)}
+                  >
+                    {showAllShifts ? "Show Less" : "Show More"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -413,7 +524,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
             <p>Nothing in here yet</p>
           </div>
         )}
-        {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded flex justify-between items-center">
+            <span>{error}</span>
+            <button
+              className="text-red-700 font-bold"
+              onClick={() => setError(null)}
+              aria-label="Close error message"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="flex flex-row-reverse gap-2 mt-4 border-t border-gray-300 pt-4">
           <button
             type="button"
