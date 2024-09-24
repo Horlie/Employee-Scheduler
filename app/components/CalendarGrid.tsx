@@ -98,7 +98,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         try {
           const availability = availabilityData.find(
             (a: EmployeeAvailability) =>
-              a.employeeId === selectedEmployee.id &&
+              a.employeeId === Number(selectedEmployee.id) &&
               new Date(a.startDate).toDateString() === selectedDate.toDateString()
           );
           if (availability) {
@@ -125,7 +125,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                   .filter(
                     (a: EmployeeAvailability) =>
                       !(
-                        a.employeeId === selectedEmployee.id &&
+                        a.employeeId === Number(selectedEmployee.id) &&
                         a.startDate === startDate.toISOString() &&
                         a.finishDate === finishDate.toISOString()
                       )
@@ -141,7 +141,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       } else {
         const existingAvailability = availabilityData.find(
           (a) =>
-            a.employeeId === selectedEmployee.id &&
+            a.employeeId === Number(selectedEmployee.id) &&
             new Date(a.startDate).toDateString() === selectedDate.toDateString()
         );
         if (existingAvailability) {
@@ -159,7 +159,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                   .filter(
                     (a: EmployeeAvailability) =>
                       !(
-                        a.employeeId === selectedEmployee.id &&
+                        a.employeeId === Number(selectedEmployee.id) &&
                         a.startDate === existingAvailability.startDate &&
                         a.finishDate === existingAvailability.finishDate
                       )
@@ -197,7 +197,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              employeeId: selectedEmployee.id,
+              employeeId: Number(selectedEmployee.id),
               startDate: startDate.toISOString(),
               finishDate: finishDate.toISOString(),
               status,
@@ -211,7 +211,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
             const newAvailability: EmployeeAvailability = {
               id: Date.now(), // Generate a temporary ID
-              employeeId: selectedEmployee.id,
+              employeeId: Number(selectedEmployee.id),
               startDate: localToUTC(startDate).toISOString(),
               finishDate: localToUTC(finishDate).toISOString(),
               status,
@@ -333,7 +333,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
     const availability = availabilityData.find(
       (a: EmployeeAvailability) =>
-        a.employeeId === employee.id && new Date(a.startDate).toDateString() === day.toDateString()
+        a.employeeId === Number(employee.id) &&
+        new Date(a.startDate).toDateString() === day.toDateString()
     );
     const formatTime = (date: Date) => format(new Date(localToUTCPlus(date)), "HH:mm");
 

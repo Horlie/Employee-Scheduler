@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Employee } from "../types/scheduler";
+import RateToolTip from "./RateToolTip";
+import { useEmployee } from "../context/EmployeeContext";
 
 interface EmployeeColumnProps {
   groupedEmployees: [string, Employee[]][];
@@ -14,6 +16,39 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
   renderSearchBar,
   hoveredEmployee,
 }) => {
+  const [tooltipEmployeeId, setTooltipEmployeeId] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+
+  // ... existing state ...
+
+  const { setEmployees } = useEmployee();
+
+  const handleRateUpdate = (employeeId: string, newRate: number) => {
+    // Update global EmployeeContext
+    setEmployees((prevEmployees) =>
+      prevEmployees.map((emp) =>
+        emp.id.toString() === employeeId ? { ...emp, rate: newRate } : emp
+      )
+    );
+  };
+
+  const handleRateClick = (
+    employeeId: string,
+    currentRate: number,
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>
+  ) => {
+    const scrollTop = window.scrollY;
+    const scrollLeft = window.scrollX;
+    const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+    setTooltipPosition({ x: rect.right + 10 + scrollLeft, y: rect.top + scrollTop }); // Position tooltip 10px to the right
+    setTooltipEmployeeId(employeeId);
+  };
+
+  const closeTooltip = () => {
+    setTooltipEmployeeId(null);
+    setTooltipPosition(null);
+  };
+
   return (
     <div className={`w-48 flex-shrink-0 flex flex-col bg-white`}>
       {renderGroupSeparator("")}
@@ -39,11 +74,12 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                       : "none",
                 }}
               >
-                <img
-                  src={`https://xsgames.co/randomusers/avatar.php?g=pixel&id=${employee.id}`}
-                  alt={employee.name}
-                  className="w-8 h-8 rounded-full mr-2"
-                />
+                <div
+                  className="w-8 h-8 rounded-full border border-gray-500 flex items-center justify-center mr-2 cursor-pointer"
+                  onClick={(e) => handleRateClick(employee.id.toString(), employee.rate, e)}
+                >
+                  {employee.rate.toFixed(1)}
+                </div>
                 <div>
                   <div className="font-semibold text-sm">{employee.name}</div>
                 </div>
@@ -57,6 +93,20 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
           </React.Fragment>
         ))}
       </div>
+      {/* Render RateToolTip with position */}
+      {tooltipEmployeeId && tooltipPosition && (
+        <RateToolTip
+          employeeId={tooltipEmployeeId}
+          currentRate={
+            groupedEmployees
+              .flatMap(([_, employees]) => employees)
+              .find((emp) => emp.id.toString() === tooltipEmployeeId)?.rate || 0.0
+          }
+          onRateUpdate={(newRate) => handleRateUpdate(tooltipEmployeeId, newRate)}
+          onClose={closeTooltip}
+          position={tooltipPosition}
+        />
+      )}
     </div>
   );
 };

@@ -18,11 +18,11 @@ model User {
 }
 
 model Employee {
-  id           Int                    @id @default(autoincrement())
-  name         String
-  role         String
-  userId       Int
-  user         User                   @relation(fields: [userId], references: [id])
+  id    Int     @id @default(autoincrement())
+  name  String
+  rate  Float   @default(0.0)
+  userId Int
+  user  User    @relation(fields: [userId], references: [id])
   availability EmployeeAvailability[]
 }
 

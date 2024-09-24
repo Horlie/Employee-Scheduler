@@ -1,6 +1,7 @@
 export interface Employee {
-  id: number;
+  id: number; // Changed from string to number
   name: string;
+  rate: number;
   role: string;
   availability?: EmployeeAvailability[];
 }
