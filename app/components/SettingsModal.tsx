@@ -1,4 +1,3 @@
-// Start of Selection
 import React, { useState, useEffect } from "react";
 
 interface SettingsModalProps {
@@ -13,7 +12,7 @@ interface Shift {
   startTime: string;
   endTime: string;
   days: string[];
-  role: string[]; // Added roles to Shift
+  role: string[];
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles }) => {
@@ -30,6 +29,26 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [userId, setUserId] = useState<number>(0); // Added userId state
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]); // Added selectedRoles state
   const [showAllShifts, setShowAllShifts] = useState(false); // {{ edit_1 }}
+  const [monthlyHours, setMonthlyHours] = useState<number>(0);
+  const [dailyShiftsPerWorkerPerMonth, setDailyShiftsPerWorkerPerMonth] = useState<number>(0);
+  const [initialMonthlyHours, setInitialMonthlyHours] = useState<number>(0);
+  const [initialDailyShiftsPerWorkerPerMonth, setInitialDailyShiftsPerWorkerPerMonth] =
+    useState<number>(0);
+
+  const initializeRoleSettings = () => {
+    const initialSettings: { [key: string]: { min: number; max: number } } = {};
+    roles.forEach((role) => {
+      initialSettings[role] = { min: 0, max: 0 };
+    });
+    return initialSettings;
+  };
+
+  const [roleSettings, setRoleSettings] = useState<{ [key: string]: { min: number; max: number } }>(
+    initializeRoleSettings()
+  );
+  const [initialRoleSettings, setInitialRoleSettings] = useState<{
+    [key: string]: { min: number; max: number };
+  }>(initializeRoleSettings());
 
   useEffect(() => {
     if (isOpen) {
@@ -40,13 +59,66 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       } else {
         setError("User not found. Please log in again.");
       }
+    }
+  }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen) {
       // Fetch shifts from the database
       fetch("/api/shifts")
         .then((res) => res.json())
-        .then((data) => setActiveShifts(data));
+        .then((data) => setActiveShifts(data))
+        .catch(() => setError("Failed to fetch shifts. Please try again."));
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const user = localStorage.getItem("user");
+      if (user) {
+        const parsedUser = JSON.parse(user);
+        fetch("/api/settings", {
+          method: "POST", // Using POST for fetching
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: parsedUser.email,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.error) {
+              setError(data.error);
+            } else if (!data.roleSettings) {
+              setError("Role settings are missing in the fetched data.");
+            } else {
+              setMonthlyHours(data.monthlyHours);
+              setInitialMonthlyHours(data.monthlyHours);
+              setDailyShiftsPerWorkerPerMonth(data.dailyShiftsPerWorkerPerMonth);
+              setInitialDailyShiftsPerWorkerPerMonth(data.dailyShiftsPerWorkerPerMonth);
+              const updatedRoleSettings = initializeRoleSettings();
+              roles.forEach((role) => {
+                if (data.roleSettings && data.roleSettings[role]) {
+                  updatedRoleSettings[role] = {
+                    min: data.roleSettings[role].min,
+                    max: data.roleSettings[role].max,
+                  };
+                } else {
+                  console.warn(`RoleSettings for "${role}" is missing. Using default values.`);
+                }
+              });
+              setRoleSettings(updatedRoleSettings);
+              setInitialRoleSettings(updatedRoleSettings);
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching settings:", error);
+            setError("Failed to fetch settings. Please try again.");
+          });
+      } else {
+        setError("User not found. Please log in again.");
+      }
+    }
+  }, [isOpen, roles]);
 
   // Disable scrolling when modal is open
   useEffect(() => {
@@ -62,7 +134,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     // Added validation for days and roles
     if (shiftDays.length < 1) {
       setError("Please select at least one day.");
@@ -99,22 +170,40 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/shifts", {
+      if (shiftsToDelete.length > 0 || pendingShifts.length > 0) {
+        const response = await fetch("/api/shifts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "An error occurred while applying changes.");
+        }
+
+        setPendingShifts([]);
+        setShiftsToDelete([]);
+        const updatedShifts = await response.json();
+        setActiveShifts(updatedShifts);
+      }
+      const response2 = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete }),
+        body: JSON.stringify({
+          email: JSON.parse(localStorage.getItem("user") || "{}").email,
+          password: JSON.parse(localStorage.getItem("user") || "{}").password,
+          monthlyHours: monthlyHours,
+          dailyShiftsPerWorkerPerMonth: dailyShiftsPerWorkerPerMonth,
+          roleSettings: roleSettings, // Changed from 'roles' to 'roleSettings'
+        }),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
+      if (!response2.ok) {
+        const data = await response2.json();
         throw new Error(data.error || "An error occurred while applying changes.");
       }
 
-      setPendingShifts([]);
-      setShiftsToDelete([]);
-      const updatedShifts = await response.json();
-      setActiveShifts(updatedShifts);
-      onClose(); // Close modal after applying changes
+      onClose();
     } catch (err: any) {
       console.error(err);
       setError(err.message);
@@ -165,7 +254,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         </div>
 
         {activeTab === "General" && (
-          // Existing General settings fields
           <>
             <div className="flex flex-row justify-between">
               <label htmlFor="monthlyHours" className="content-center">
@@ -175,7 +263,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 id="monthlyHours"
                 type="text"
                 className="w-40 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center"
-                placeholder="167"
+                placeholder={initialMonthlyHours.toString()}
+                onChange={(e) => setMonthlyHours(parseInt(e.target.value))}
               />
             </div>
             <div className="flex flex-row justify-between gap-4">
@@ -186,41 +275,64 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 id="dailyShifts"
                 type="text"
                 className="w-40 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center"
-                placeholder="2"
+                placeholder={initialDailyShiftsPerWorkerPerMonth.toString()}
+                onChange={(e) => setDailyShiftsPerWorkerPerMonth(parseInt(e.target.value))}
               />
             </div>
 
-            {roles
-              .map((role) => (
-                <React.Fragment key={role}>
-                  <div className="flex-grow flex items-center justify-center mt-2">
-                    <span className="text-xl tracking-wide font-normal text-gray-500 uppercase">
-                      {role}
-                    </span>
-                  </div>
-                  <hr className="w-full h-[1px] bg-gray-300 mb-2" />
-                  <div className="flex flex-row justify-between">
-                    <label htmlFor="workersPerDay" className="content-center">
-                      Workers per day
-                    </label>
-                    <span className="mx-2 content-center">min</span>
-                    <input
-                      id="minumumWorkersPerDay"
-                      type="text"
-                      className="w-20 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center"
-                      placeholder="4"
-                    />
-                    <span className="mx-2 content-center">max</span>
-                    <input
-                      id="maximumWorkersPerDay"
-                      type="text"
-                      className="w-20 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center"
-                      placeholder="5"
-                    />
-                  </div>
-                </React.Fragment>
-              ))
-              .reverse()}
+            {roles && roles.length > 0 ? (
+              roles
+                .map((role) => (
+                  <React.Fragment key={role}>
+                    <div className="flex-grow flex items-center justify-center mt-2">
+                      <span className="text-xl tracking-wide font-normal text-gray-500 uppercase">
+                        {role}
+                      </span>
+                    </div>
+                    <hr className="w-full h-[1px] bg-gray-300 mb-2" />
+                    <div className="flex flex-row justify-between">
+                      <label htmlFor={`workersPerDay-${role}`} className="content-center">
+                        Workers per day
+                      </label>
+                      <span className="mx-2 content-center">min</span>
+                      <input
+                        id={`minumumWorkersPerDay-${role}`}
+                        type="text"
+                        className="w-20 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center"
+                        placeholder={initialRoleSettings[role]?.min.toString() || "0"}
+                        onChange={(e) =>
+                          setRoleSettings({
+                            ...roleSettings,
+                            [role]: {
+                              ...roleSettings[role],
+                              min: parseInt(e.target.value),
+                            },
+                          })
+                        }
+                      />
+                      <span className="mx-2 content-center">max</span>
+                      <input
+                        id={`maximumWorkersPerDay-${role}`}
+                        type="text"
+                        className="w-20 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center"
+                        placeholder={initialRoleSettings[role]?.max.toString() || "0"}
+                        onChange={(e) =>
+                          setRoleSettings({
+                            ...roleSettings,
+                            [role]: {
+                              ...roleSettings[role],
+                              max: parseInt(e.target.value),
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </React.Fragment>
+                ))
+                .reverse()
+            ) : (
+              <p>No roles available.</p>
+            )}
           </>
         )}
         {activeTab === "Shifts" && (

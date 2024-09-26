@@ -14,12 +14,16 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   employees Employee[]
-  shifts    Shift[]    // Add this line to establish the relation
+  shifts    Shift[]
+  dailyShiftsPerWorkerPerMonth Int?
+  monthlyHours Int?
+  roleSettings Json?
 }
 
 model Employee {
   id    Int     @id @default(autoincrement())
   name  String
+  role  String
   rate  Float   @default(0.0)
   userId Int
   user  User    @relation(fields: [userId], references: [id])
