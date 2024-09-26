@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { getWeek, format } from "date-fns";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
-import LoadingSpinner from "./LoadingSpinner";
 
 interface CalendarGridProps {
   groupedEmployees: [string, Employee[]][];

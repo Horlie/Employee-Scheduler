@@ -8,6 +8,7 @@ interface EmployeeColumnProps {
   renderGroupSeparator: (text: string) => JSX.Element;
   renderSearchBar: () => JSX.Element;
   hoveredEmployee: string | null;
+  showTooltips: boolean;
 }
 
 const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
@@ -15,11 +16,10 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
   renderGroupSeparator,
   renderSearchBar,
   hoveredEmployee,
+  showTooltips,
 }) => {
   const [tooltipEmployeeId, setTooltipEmployeeId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
-
-  // ... existing state ...
 
   const { setEmployees } = useEmployee();
 
@@ -94,7 +94,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
         ))}
       </div>
       {/* Render RateToolTip with position */}
-      {tooltipEmployeeId && tooltipPosition && (
+      {tooltipEmployeeId && tooltipPosition && showTooltips && (
         <RateToolTip
           employeeId={tooltipEmployeeId}
           currentRate={

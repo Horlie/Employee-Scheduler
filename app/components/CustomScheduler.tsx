@@ -51,7 +51,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   roles,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [cellWidth, setCellWidth] = useState(0);
+  const [cellWidth, setCellWidth] = useState(50);
   const [searchTerm, setSearchTerm] = useState("");
   const gridRef = useRef<HTMLDivElement>(null);
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
@@ -185,6 +185,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
             renderGroupSeparator={renderGroupSeparator}
             renderSearchBar={renderSearchBar}
             hoveredEmployee={hoveredEmployee}
+            showTooltips={showTooltips}
           />
           <CalendarGrid
             groupedEmployees={groupedEmployees}
