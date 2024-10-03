@@ -49,4 +49,5 @@ model Shift {
   endTime   String
   days      String[]
   role      String[]
+  isFullDay Boolean  @default(false)
 }
