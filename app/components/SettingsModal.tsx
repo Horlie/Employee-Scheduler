@@ -24,10 +24,37 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]); // Added selectedRoles state
   const [showAllShifts, setShowAllShifts] = useState(false);
   const [monthlyHours, setMonthlyHours] = useState<number>(0);
-  const [dailyShiftsPerWorkerPerMonth, setDailyShiftsPerWorkerPerMonth] = useState<number>(0);
   const [initialMonthlyHours, setInitialMonthlyHours] = useState<number>(0);
-  const [initialDailyShiftsPerWorkerPerMonth, setInitialDailyShiftsPerWorkerPerMonth] =
-    useState<number>(0);
+
+  const initializeDailyShifts = () => ({
+    Monday: 0,
+    Tuesday: 0,
+    Wednesday: 0,
+    Thursday: 0,
+    Friday: 0,
+    Saturday: 0,
+    Sunday: 0,
+  });
+
+  const [dailyShiftsPerWorkerPerMonth, setDailyShiftsPerWorkerPerMonth] = useState<{
+    Monday: number;
+    Tuesday: number;
+    Wednesday: number;
+    Thursday: number;
+    Friday: number;
+    Saturday: number;
+    Sunday: number;
+  }>(initializeDailyShifts());
+
+  const [initialDailyShiftsPerWorkerPerMonth, setInitialDailyShiftsPerWorkerPerMonth] = useState<{
+    Monday: number;
+    Tuesday: number;
+    Wednesday: number;
+    Thursday: number;
+    Friday: number;
+    Saturday: number;
+    Sunday: number;
+  }>(initializeDailyShifts());
 
   const initializeRoleSettings = () => {
     const initialSettings: {
@@ -66,6 +93,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       Sunday: number;
     };
   }>(initializeRoleSettings());
+
   const [initialRoleSettings, setInitialRoleSettings] = useState<{
     [key: string]: {
       Monday: number;
@@ -122,8 +150,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
               console.log(data);
               setMonthlyHours(data.monthlyHours);
               setInitialMonthlyHours(data.monthlyHours);
-              setDailyShiftsPerWorkerPerMonth(data.dailyShiftsPerWorkerPerMonth);
-              setInitialDailyShiftsPerWorkerPerMonth(data.dailyShiftsPerWorkerPerMonth);
               const updatedRoleSettings = initializeRoleSettings();
               roles.forEach((role) => {
                 if (data.roleSettings && data.roleSettings[role]) {
@@ -140,6 +166,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   console.warn(`RoleSettings for "${role}" is missing. Using default values.`);
                 }
               });
+              if (data.dailyShiftSettings) {
+                const updatedDailyShiftsPerWorkerPerMonth = {
+                  Monday: data.dailyShiftSettings.Monday,
+                  Tuesday: data.dailyShiftSettings.Tuesday,
+                  Wednesday: data.dailyShiftSettings.Wednesday,
+                  Thursday: data.dailyShiftSettings.Thursday,
+                  Friday: data.dailyShiftSettings.Friday,
+                  Saturday: data.dailyShiftSettings.Saturday,
+                  Sunday: data.dailyShiftSettings.Sunday,
+                };
+                setDailyShiftsPerWorkerPerMonth(updatedDailyShiftsPerWorkerPerMonth);
+                setInitialDailyShiftsPerWorkerPerMonth(updatedDailyShiftsPerWorkerPerMonth);
+              }
               setRoleSettings(updatedRoleSettings);
               setInitialRoleSettings(updatedRoleSettings);
             }
@@ -225,7 +264,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
           email: JSON.parse(localStorage.getItem("user") || "{}").email,
           password: JSON.parse(localStorage.getItem("user") || "{}").password,
           monthlyHours: monthlyHours,
-          dailyShiftsPerWorkerPerMonth: dailyShiftsPerWorkerPerMonth,
+          dailyShiftSettings: dailyShiftsPerWorkerPerMonth,
           roleSettings: roleSettings,
         }),
       });
@@ -287,38 +326,74 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         {activeTab === "General" && (
           <>
             <div className="flex flex-col w-full max-w-2xl mx-auto">
-              <div className="flex flex-row justify-between items-center">
-                <label htmlFor="monthlyHours" className="text-nowrap">
+              <div className="flex flex-col justify-between items-center">
+                <label htmlFor="monthlyHours" className="text-nowrap my-2">
                   Hours per month
                 </label>
                 <input
                   id="monthlyHours"
-                  type="text"
-                  className="p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center w-1/3"
+                  type="number"
+                  className="p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 text-center rounded-md"
                   placeholder={initialMonthlyHours.toString()}
+                  value={monthlyHours}
                   onChange={(e) => setMonthlyHours(parseInt(e.target.value))}
                 />
               </div>
-
-              <div className="flex flex-row justify-between items-center">
-                <label htmlFor="dailyShifts" className="text-nowrap">
-                  Daily shifts per worker per month
-                </label>
-                <input
-                  id="dailyShifts"
-                  type="text"
-                  className="p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center w-1/3"
-                  placeholder={initialDailyShiftsPerWorkerPerMonth.toString()}
-                  onChange={(e) => setDailyShiftsPerWorkerPerMonth(parseInt(e.target.value))}
-                />
-              </div>
+              {activeShifts.some((shift) => shift.isFullDay) && activeShifts && (
+                <div className="flex flex-col">
+                  <div className="flex justify-center items-center my-4">
+                    <label
+                      htmlFor="dailyShifts"
+                      className="text-nowrap font-semibold text-gray-500 border border-gray-200 rounded-md p-2"
+                    >
+                      Daily shifts
+                    </label>
+                  </div>
+                  <div className="flex flex-row space-x-4">
+                    {[
+                      "Monday",
+                      "Tuesday",
+                      "Wednesday",
+                      "Thursday",
+                      "Friday",
+                      "Saturday",
+                      "Sunday",
+                    ].map((day) => (
+                      <div key={day} className="flex flex-col items-center">
+                        <label htmlFor={`dailyShift-${day}`} className="text-sm my-1">
+                          {day}
+                        </label>
+                        <input
+                          id={`dailyShift-${day}`}
+                          type="number"
+                          className="w-20 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 text-center rounded-md"
+                          placeholder={dailyShiftsPerWorkerPerMonth[
+                            day as keyof typeof dailyShiftsPerWorkerPerMonth
+                          ].toString()}
+                          value={
+                            dailyShiftsPerWorkerPerMonth[
+                              day as keyof typeof dailyShiftsPerWorkerPerMonth
+                            ]
+                          }
+                          onChange={(e) =>
+                            setDailyShiftsPerWorkerPerMonth({
+                              ...dailyShiftsPerWorkerPerMonth,
+                              [day]: parseInt(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {roles && roles.length > 0 ? (
               roles
                 .map((role) => (
                   <React.Fragment key={role}>
-                    <hr className="w-full h-[1px] bg-gray-300 mt-2" />
+                    <hr className="w-full h-[1px] bg-gray-300 mt-8" />
                     <div className="flex-grow flex items-center justify-center">
                       <span className="text-xl tracking-wide font-normal text-gray-500 uppercase">
                         {role}
@@ -328,12 +403,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     <div className="flex justify-center">
                       <label
                         htmlFor={`workersPerDay-${role}`}
-                        className="mb-4 mt-2 font-semibold text-gray-600 border border-gray-300 rounded-md p-2"
+                        className="mb-4 mt-2 font-semibold text-gray-500 border border-gray-200 rounded-md p-2"
                       >
-                        Workers per day
+                        Regular shifts
                       </label>
                     </div>
-                    <div className="flex flex-row justify-between">
+                    <div className="flex flex-row space-x-4">
                       {[
                         "Monday",
                         "Tuesday",
@@ -343,12 +418,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                         "Saturday",
                         "Sunday",
                       ].map((day) => (
-                        <div key={day} className="flex items-center justify-between mb-2">
-                          <span className="mx-2 content-center">{day}</span>
+                        <div key={day} className="flex flex-col items-center">
+                          <label htmlFor={`label-${day}`} className="my-1 text-sm">
+                            {day}
+                          </label>
                           <input
                             id={`${day}`}
-                            type="text"
-                            className="w-20 p-2 focus:border-b-2 rounded-md focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 placeholder:text-center"
+                            type="number"
+                            className="w-20 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 text-center rounded-md"
                             placeholder={
                               initialRoleSettings[role]?.[
                                 day as keyof (typeof initialRoleSettings)[typeof role]
@@ -357,6 +434,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                     day as keyof (typeof initialRoleSettings)[typeof role]
                                   ].toString()
                                 : "0"
+                            }
+                            value={
+                              roleSettings[role]?.[
+                                day as keyof (typeof roleSettings)[typeof role]
+                              ] || 0
                             }
                             onChange={(e) =>
                               setRoleSettings({

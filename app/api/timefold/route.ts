@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { PrismaClient, User } from "@prisma/client";
-import { Employee, EmployeeAvailability, Shift, RoleSettings } from "@/app/types/scheduler";
+import {
+  Employee,
+  EmployeeAvailability,
+  Shift,
+  RoleSettings,
+  DailyShiftSettings,
+} from "@/app/types/scheduler";
+import { JsonValue } from "@prisma/client/runtime/library";
 
 const prisma = new PrismaClient();
+const BACKEND_URL = process.env.BACKEND_URL;
 
-export async function GET() {
-  const employeeId = 1;
+export async function POST(req: Request) {
+  const { employeeId, month } = await req.json();
 
   try {
     // Fetch employees with their availabilities and roles
@@ -38,15 +46,78 @@ export async function GET() {
       },
     });
     // Build the TimeFold JSON
-    const timefoldJson = buildTimefoldJson(employees, shifts, user!);
-    return NextResponse.json(timefoldJson);
+    const timefoldJson = buildTimefoldJson(employees, shifts, user!, month);
+
+    // Send POST request to BACKEND_URL/schedules
+    const postResponse = await fetch(`${BACKEND_URL}/schedules`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(timefoldJson),
+    });
+
+    // Add logging for POST response
+    const postText = await postResponse.text();
+    console.log("POST /schedules response:", postText);
+
+    // Send GET request to BACKEND_URL/scheduler/{jobId}
+    const getResponse = await fetch(`${BACKEND_URL}/schedules/${postText}`);
+    const getText = await getResponse.text();
+    console.log(`GET /schedules/${postText} response:`, getText);
+
+    let statusData: any;
+    try {
+      statusData = JSON.parse(getText);
+    } catch (parseError) {
+      console.error("Error parsing GET response JSON:", parseError);
+      return NextResponse.json(
+        { error: "Invalid status response from scheduler service." },
+        { status: 500 }
+      );
+    }
+
+    // If solverStatus is NOT_SOLVING, return the status JSON
+    while (statusData.solverStatus !== "NOT_SOLVING") {
+      console.log("Waiting for solver to finish...");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const getResponse = await fetch(`${BACKEND_URL}/schedules/${postText}`);
+      const getText = await getResponse.text();
+      statusData = JSON.parse(getText);
+    }
+    return NextResponse.json(statusData);
   } catch (error) {
     console.error("Error generating TimeFold JSON:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const userId = url.searchParams.get("userId");
 
-function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User) {
+  if (!userId) {
+    return NextResponse.json({ error: "Missing userId parameter." }, { status: 400 });
+  }
+
+  try {
+    const schedule = await prisma.schedule.findMany({
+      where: {
+        userId: parseInt(userId),
+      },
+    });
+
+    if (!schedule) {
+      return NextResponse.json({ error: "Schedule not found." }, { status: 404 });
+    }
+
+    return NextResponse.json(schedule);
+  } catch (error) {
+    console.error("Error fetching schedule:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User, month: number) {
   const timefoldEmployees = employees.map((employee: Employee) => ({
     name: employee.name,
     skills: [employee.role], // Assuming 'role' is a string
@@ -80,7 +151,10 @@ function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User) {
   const timefoldShifts = generateMonthlyShifts(
     user.roleSettings as unknown as RoleSettings,
     shifts,
-    user.dailyShiftsPerWorkerPerMonth ? user.dailyShiftsPerWorkerPerMonth : 1
+    user.dailyShiftSettings
+      ? user.dailyShiftSettings
+      : { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 },
+    month
   );
 
   return {
@@ -92,11 +166,11 @@ function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User) {
 function generateMonthlyShifts(
   roleSettings: RoleSettings,
   shifts: Shift[],
-  dailyShiftsPerWorkerPerMonth: number
+  dailyShiftSettings: JsonValue,
+  month: number
 ) {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const timefoldShifts: Array<{
@@ -105,6 +179,7 @@ function generateMonthlyShifts(
     end: string;
     location: string;
     requiredSkill: string;
+    isFullDay: boolean;
   }> = [];
 
   for (let day = 1; day <= daysInMonth; day++) {
@@ -125,25 +200,32 @@ function generateMonthlyShifts(
               const { startTime, endTime } = getShiftTimes(shift, date);
               timefoldShifts.push({
                 id: timefoldShifts.length + 1,
-                start: startTime.toISOString().slice(0, -2),
-                end: endTime.toISOString().slice(0, -2),
+                start: startTime.toISOString().slice(0, -5),
+                end: endTime.toISOString().slice(0, -5),
                 location: "Hospital",
                 requiredSkill: role,
+                isFullDay: shift.isFullDay,
               });
             }
           }
         });
       } else if (shift.days.includes(dayName) && shift.isFullDay) {
         shift.role.forEach((role) => {
-          for (let i = 0; i < dailyShiftsPerWorkerPerMonth; i++) {
-            const { startTime, endTime } = getShiftTimes(shift, date);
-            timefoldShifts.push({
-              id: timefoldShifts.length + 1,
-              start: startTime.toISOString().slice(0, -2),
-              end: endTime.toISOString().slice(0, -2),
-              location: "Hospital",
-              requiredSkill: role,
-            });
+          const shiftCount = dailyShiftSettings
+            ? (dailyShiftSettings as DailyShiftSettings)[dayName as keyof DailyShiftSettings]
+            : 0;
+          if (typeof shiftCount === "number") {
+            for (let i = 0; i < shiftCount; i++) {
+              const { startTime, endTime } = getShiftTimes(shift, date);
+              timefoldShifts.push({
+                id: timefoldShifts.length + 1,
+                start: startTime.toISOString().slice(0, -5),
+                end: endTime.toISOString().slice(0, -5),
+                location: "Hospital",
+                requiredSkill: role,
+                isFullDay: shift.isFullDay,
+              });
+            }
           }
         });
       }
@@ -191,7 +273,6 @@ function parseShiftTimes(
 
   return { startTime: localToUTC(startTime), endTime: localToUTC(endTime) };
 }
-
 const localToUTC = (date: Date) => {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
 };

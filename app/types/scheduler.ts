@@ -1,3 +1,5 @@
+import { JsonObject } from "@prisma/client/runtime/library";
+
 export interface Employee {
   id: number; // Changed from string to number
   name: string;
@@ -12,6 +14,7 @@ export interface EmployeeAvailability {
   startDate: Date | string;
   finishDate: Date | string;
   status: string;
+  isFullDay: boolean;
 }
 
 export interface SchedulerEvent {
@@ -40,7 +43,7 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   monthlyHours: number;
-  dailyShiftsPerWorkerPerMonth: number;
+  dailyShiftSettings: DailyShiftSettings;
   roleSettings: RoleSettings;
 }
 
@@ -54,4 +57,31 @@ export interface RoleSettings {
     Saturday?: number;
     Sunday?: number;
   };
+}
+
+export interface DailyShiftSettings {
+  Monday?: number;
+  Tuesday?: number;
+  Wednesday?: number;
+  Thursday?: number;
+  Friday?: number;
+  Saturday?: number;
+  Sunday?: number;
+}
+
+export interface Schedule {
+  id: number;
+  userId: number;
+  month: number;
+  data: JsonObject;
+}
+
+export interface TimefoldShift {
+  employee: {
+    name: string;
+  };
+  id: string;
+  isFullDay: boolean;
+  start: string;
+  end: string;
 }

@@ -5,7 +5,8 @@ import { Employee, EmployeeAvailability } from "../types/scheduler";
 import SchedulerHeader from "./SchedulerHeader";
 import EmployeeColumn from "./EmployeeColumn";
 import CalendarGrid from "./CalendarGrid";
-import SettingsModal from "./SettingsModal"; // Added import
+import SettingsModal from "./SettingsModal";
+import LoadingSpinner from "./LoadingSpinner";
 
 // Add this function near the top of the file, after imports
 function isLatvianHoliday(date: Date): boolean {
@@ -35,9 +36,11 @@ interface CustomSchedulerProps {
   setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   availabilityData: EmployeeAvailability[];
   setAvailabilityData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
-  showSettings?: boolean; // New prop
-  showTooltips?: boolean; // New prop
+  showSettings: boolean;
+  showTooltips: boolean;
   roles: string[];
+  employeeHours: Record<number, number>; // Add this prop
+  needsRefresh: (value: boolean) => void;
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
@@ -49,6 +52,8 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   showSettings = true, // Default to true
   showTooltips = true, // Default to true
   roles,
+  employeeHours,
+  needsRefresh,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [cellWidth, setCellWidth] = useState(50);
@@ -58,7 +63,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   const [hoveredEmployee, setHoveredEmployee] = useState<string | null>(null);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-
+  const [loading, setLoading] = useState(false);
   const days = generateMonthDays(currentDate);
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -168,6 +173,69 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     </div>
   );
 
+  const handleSolveClick = () => {
+    setLoading(true);
+
+    // Retrieve employee ID from localStorage
+    const employeeId = JSON.parse(localStorage.getItem("user") || "{}").id;
+
+    if (!employeeId) {
+      console.error("Employee ID not found in localStorage.");
+      setLoading(false);
+      return;
+    }
+
+    const currentMonth = currentDate.getMonth();
+
+    // Make POST request using fetch
+    fetch("/api/timefold", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        employeeId: Number(employeeId),
+        month: currentMonth,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Save the received schedule data to the database
+        return fetch("/api/saveSchedule", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            employeeId: Number(employeeId),
+            month: currentMonth,
+            data: data,
+          }),
+        });
+      })
+      .then((saveResponse) => {
+        if (!saveResponse.ok) {
+          throw new Error("Failed to save schedule to the database");
+        }
+        return saveResponse.json();
+      })
+      .then((saveData) => {
+        needsRefresh(true);
+      })
+      .catch((error) => {
+        console.error("Error solving schedule:", error);
+        alert("An error occurred while solving the schedule."); // Notify the user
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
   return (
     <div className="flex-grow bg-white mb-5 ">
       <SchedulerHeader
@@ -176,7 +244,9 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         onNextMonth={handleNextMonth}
         onToday={handleToday}
         onSettingsClick={handleSettingsClick}
+        onSolveClick={handleSolveClick}
         showSettings={showSettings}
+        loading={loading}
       />
       <div className="flex justify-center bg-gray-100">
         <div className="flex max-w-full" ref={gridRef}>
@@ -186,6 +256,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
             renderSearchBar={renderSearchBar}
             hoveredEmployee={hoveredEmployee}
             showTooltips={showTooltips}
+            employeeHours={employeeHours} // Pass the prop
           />
           <CalendarGrid
             groupedEmployees={groupedEmployees}
@@ -208,7 +279,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
           />
         </div>
       </div>
-
+      {loading && <LoadingSpinner />}
       <SettingsModal isOpen={isSettingsModalOpen} onClose={handleSettingsClose} roles={roles} />
     </div>
   );

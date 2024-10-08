@@ -9,6 +9,7 @@ interface EmployeeColumnProps {
   renderSearchBar: () => JSX.Element;
   hoveredEmployee: string | null;
   showTooltips: boolean;
+  employeeHours: Record<number, number>; // Add this prop
 }
 
 const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
@@ -17,6 +18,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
   renderSearchBar,
   hoveredEmployee,
   showTooltips,
+  employeeHours, // Destructure the new prop
 }) => {
   const [tooltipEmployeeId, setTooltipEmployeeId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
@@ -75,13 +77,26 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                 }}
               >
                 <div
-                  className="w-8 h-8 rounded-full border border-gray-500 flex items-center justify-center mr-2 cursor-pointer"
+                  className="w-8 h-8 rounded-full border border-gray-500 flex items-center justify-center mr-2 cursor-pointer hover:text-indigo-600 hover:border-indigo-600"
                   onClick={(e) => handleRateClick(employee.id.toString(), employee.rate, e)}
                 >
                   {employee.rate.toFixed(1)}
                 </div>
-                <div>
-                  <div className="font-semibold text-sm">{employee.name}</div>
+
+                <div className="flex flex-col">
+                  <div className="font-semibold text-sm">
+                    {employee.name}
+                    {/* Display total hours */}
+                    {!showTooltips && (
+                      <span className="text-xs text-gray-500 block">
+                        (
+                        {employeeHours[employee.id]
+                          ? `${employeeHours[employee.id].toFixed(2)} hrs`
+                          : "0 hrs"}
+                        )
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

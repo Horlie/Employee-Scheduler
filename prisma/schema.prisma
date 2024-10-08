@@ -15,7 +15,8 @@ model User {
   updatedAt DateTime   @updatedAt
   employees Employee[]
   shifts    Shift[]
-  dailyShiftsPerWorkerPerMonth Int?
+  schedules Schedule[]
+  dailyShiftSettings Json?
   monthlyHours Int?
   roleSettings Json?
 }
@@ -24,7 +25,7 @@ model Employee {
   id    Int     @id @default(autoincrement())
   name  String
   role  String
-  rate  Float   @default(0.0)
+  rate  Float   @default(1.0)
   userId Int
   user  User    @relation(fields: [userId], references: [id])
   availability EmployeeAvailability[]
@@ -37,7 +38,7 @@ model EmployeeAvailability {
   startDate  DateTime
   finishDate DateTime
   status     String   // Can be 'unavailable', 'unreachable', or 'preferable'
-
+  isFullDay  Boolean  @default(false)
   @@unique([employeeId, startDate])
 }
 
@@ -50,4 +51,12 @@ model Shift {
   days      String[]
   role      String[]
   isFullDay Boolean  @default(false)
+}
+
+model Schedule {
+  id Int @id @default(autoincrement())
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+  month Int 
+  data Json
 }

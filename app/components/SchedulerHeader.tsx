@@ -6,7 +6,9 @@ interface SchedulerHeaderProps {
   onNextMonth: () => void;
   onToday: () => void;
   onSettingsClick: () => void;
+  onSolveClick: () => void; // Ensure this prop is defined
   showSettings: boolean;
+  loading: boolean; // If using loading state
 }
 
 const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
@@ -15,7 +17,9 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
   onNextMonth,
   onToday,
   onSettingsClick,
+  onSolveClick,
   showSettings,
+  loading,
 }) => {
   return (
     <div
@@ -58,6 +62,21 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
                 onClick={onSettingsClick}
               >
                 Settings
+              </button>
+            </>
+          )}
+          {!showSettings && (
+            <>
+              <div className="w-px h-py bg-gray-300 mx-2"></div>
+              <button
+                type="button"
+                className={`px-3 py-1.5 ml-2 text-white font-medium rounded-lg bg-green-600 hover:bg-green-700 ${
+                  loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                onClick={onSolveClick}
+                disabled={loading}
+              >
+                {loading ? "Solving..." : "Solve"}
               </button>
             </>
           )}

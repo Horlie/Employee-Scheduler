@@ -214,6 +214,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               startDate: localToUTC(startDate).toISOString(),
               finishDate: localToUTC(finishDate).toISOString(),
               status,
+              isFullDay: false,
             };
             setAvailabilityData((prev) => [...prev, newAvailability]);
           } else {
