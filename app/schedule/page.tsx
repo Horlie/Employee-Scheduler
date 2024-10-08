@@ -16,12 +16,14 @@ export default function Schedule() {
     setCellScheduleColors,
     scheduleData,
     setScheduleData,
+    activeMonth,
+    setActiveMonth,
   } = useEmployee();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isFullDay: Map<number, boolean> = new Map();
-  const [employeeHours, setEmployeeHours] = useState<Record<number, number>>({});
+  const [employeeHours, setEmployeeHours] = useState<Record<number, Map<number, number>>>({});
   const [needsRefresh, setNeedsRefresh] = useState(false);
 
   const router = useRouter();
@@ -127,14 +129,15 @@ export default function Schedule() {
     setCellScheduleColors(newCellColors);
 
     // Calculate total hours for each employee
-    const totals: Record<number, number> = {};
+    const totals: Map<number, number> = new Map();
     parsedData.forEach((availability: EmployeeAvailability) => {
       const start = new Date(availability.startDate);
       const finish = new Date(availability.finishDate);
       const hours = (finish.getTime() - start.getTime()) / 3600000; // Convert ms to hours
-      totals[availability.employeeId] = (totals[availability.employeeId] || 0) + hours;
+      totals.set(availability.employeeId, (totals.get(availability.employeeId) || 0) + hours);
+      // Start of Selection
     });
-    setEmployeeHours(totals);
+    setEmployeeHours({ [new Date(parsedData[0].startDate).getMonth() + 1]: totals });
   }
   const handleRefresh = (value: boolean) => {
     setNeedsRefresh(value);

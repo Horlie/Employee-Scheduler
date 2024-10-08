@@ -1,26 +1,33 @@
-import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function POST(req: Request) {
-  const { employeeId, month, data } = await req.json();
-
-  if (!employeeId || !month || !data) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-  }
+export async function POST(request: Request) {
+  const { employeeId, month, data } = await request.json();
 
   try {
-    const schedule = await prisma.schedule.create({
-      data: {
+    const schedule = await prisma.schedule.upsert({
+      where: {
+        userId_month: {
+          userId: employeeId,
+          month: month,
+        },
+      },
+      update: {
+        data: data,
+      },
+      create: {
         userId: employeeId,
-        month: month + 1,
+        month: month,
         data: data,
       },
     });
-    return NextResponse.json(schedule, { status: 201 });
+
+    return new Response(JSON.stringify({ success: true, schedule }), { status: 200 });
   } catch (error) {
-    console.error("Error saving schedule:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("Error upserting schedule:", error);
+    return new Response(JSON.stringify({ success: false, error: "Failed to save schedule." }), {
+      status: 500,
+    });
   }
 }

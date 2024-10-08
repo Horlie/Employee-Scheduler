@@ -115,6 +115,8 @@ export default function Planning() {
           showSettings={true} // Ensure settings are shown
           showTooltips={true} // Ensure tooltips are enabled
           roles={roles}
+          employeeHours={{}}
+          needsRefresh={() => {}}
         />
       </div>
     </>

@@ -7,6 +7,7 @@ import EmployeeColumn from "./EmployeeColumn";
 import CalendarGrid from "./CalendarGrid";
 import SettingsModal from "./SettingsModal";
 import LoadingSpinner from "./LoadingSpinner";
+import { useEmployee } from "../context/EmployeeContext";
 
 // Add this function near the top of the file, after imports
 function isLatvianHoliday(date: Date): boolean {
@@ -39,7 +40,7 @@ interface CustomSchedulerProps {
   showSettings: boolean;
   showTooltips: boolean;
   roles: string[];
-  employeeHours: Record<number, number>; // Add this prop
+  employeeHours: Record<number, Map<number, number>>;
   needsRefresh: (value: boolean) => void;
 }
 
@@ -55,7 +56,6 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   employeeHours,
   needsRefresh,
 }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [cellWidth, setCellWidth] = useState(50);
   const [searchTerm, setSearchTerm] = useState("");
   const gridRef = useRef<HTMLDivElement>(null);
@@ -64,6 +64,16 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Add activeMonth from EmployeeContext
+  const { activeMonth, setActiveMonth } = useEmployee();
+  const [currentDate, setCurrentDate] = useState(activeMonth);
+
+  // Update useEffect to listen to activeMonth changes
+  useEffect(() => {
+    setCurrentDate(activeMonth);
+  }, [activeMonth]);
+
   const days = generateMonthDays(currentDate);
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -101,19 +111,19 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
 
     window.addEventListener("resize", updateCellWidth);
     return () => window.removeEventListener("resize", updateCellWidth);
-  }, [days.length]);
+  }, [days.length, activeMonth]); // Add activeMonth as a dependency if needed
 
   // Helper functions
   const handlePrevMonth = () => {
-    setCurrentDate((prevDate) => new Date(prevDate.getFullYear(), prevDate.getMonth() - 1, 1));
+    setActiveMonth(new Date(activeMonth.getFullYear(), activeMonth.getMonth() - 1, 1));
   };
 
   const handleNextMonth = () => {
-    setCurrentDate((prevDate) => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1));
+    setActiveMonth(new Date(activeMonth.getFullYear(), activeMonth.getMonth() + 1, 1));
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date());
+    setActiveMonth(new Date());
   };
 
   const isToday = (date: Date) => {

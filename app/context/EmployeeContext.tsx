@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
 
 interface EmployeeContextType {
@@ -14,6 +14,8 @@ interface EmployeeContextType {
   setCellScheduleColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   scheduleData: EmployeeAvailability[];
   setScheduleData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
+  activeMonth: Date;
+  setActiveMonth: (date: Date) => void;
 }
 
 const EmployeeContext = createContext<EmployeeContextType | undefined>(undefined);
@@ -24,6 +26,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   const [availabilityData, setAvailabilityData] = useState<EmployeeAvailability[]>([]);
   const [cellScheduleColors, setCellScheduleColors] = useState<Record<string, string>>({});
   const [scheduleData, setScheduleData] = useState<EmployeeAvailability[]>([]);
+  const [activeMonth, setActiveMonth] = useState(new Date());
 
   return (
     <EmployeeContext.Provider
@@ -38,6 +41,8 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
         setCellScheduleColors,
         scheduleData,
         setScheduleData,
+        activeMonth,
+        setActiveMonth,
       }}
     >
       {children}
@@ -45,10 +50,10 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useEmployee = () => {
+export const useEmployee = (): EmployeeContextType => {
   const context = useContext(EmployeeContext);
-  if (context === undefined) {
-    throw new Error("useEmployee must be used within an EmployeeProvider");
+  if (!context) {
+    throw new Error("useEmployeeContext must be used within an EmployeeProvider");
   }
   return context;
 };

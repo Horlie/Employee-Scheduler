@@ -9,7 +9,7 @@ interface EmployeeColumnProps {
   renderSearchBar: () => JSX.Element;
   hoveredEmployee: string | null;
   showTooltips: boolean;
-  employeeHours: Record<number, number>; // Add this prop
+  employeeHours: Record<number, Map<number, number>>;
 }
 
 const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
@@ -22,8 +22,8 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
 }) => {
   const [tooltipEmployeeId, setTooltipEmployeeId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
-
   const { setEmployees } = useEmployee();
+  const { activeMonth } = useEmployee();
 
   const handleRateUpdate = (employeeId: string, newRate: number) => {
     // Update global EmployeeContext
@@ -90,8 +90,10 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                     {!showTooltips && (
                       <span className="text-xs text-gray-500 block">
                         (
-                        {employeeHours[employee.id]
-                          ? `${employeeHours[employee.id].toFixed(2)} hrs`
+                        {employeeHours[activeMonth.getMonth() + 1]?.get(employee.id)
+                          ? `${employeeHours[activeMonth.getMonth() + 1]
+                              .get(employee.id)
+                              ?.toFixed(2)} hrs`
                           : "0 hrs"}
                         )
                       </span>

@@ -22,7 +22,7 @@ model User {
 }
 
 model Employee {
-  id    Int     @id @default(autoincrement())
+  id    Int     @id @default(autoincrement()) @unique
   name  String
   role  String
   rate  Float   @default(1.0)
@@ -57,6 +57,8 @@ model Schedule {
   id Int @id @default(autoincrement())
   userId Int
   user User @relation(fields: [userId], references: [id])
-  month Int 
+  month Int
   data Json
+
+  @@unique([userId, month], name: "userId_month") // Defines a composite unique constraint on userId and month
 }

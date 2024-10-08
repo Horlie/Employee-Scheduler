@@ -25,6 +25,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [showAllShifts, setShowAllShifts] = useState(false);
   const [monthlyHours, setMonthlyHours] = useState<number>(0);
   const [initialMonthlyHours, setInitialMonthlyHours] = useState<number>(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Added for file selection
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null); // Added for upload status
+  const [importError, setImportError] = useState<string | null>(null); // Added for import errors
 
   const initializeDailyShifts = () => ({
     Monday: 0,
@@ -147,7 +150,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
             } else if (!data.roleSettings) {
               setError("Role settings are missing in the fetched data.");
             } else {
-              console.log(data);
               setMonthlyHours(data.monthlyHours);
               setInitialMonthlyHours(data.monthlyHours);
               const updatedRoleSettings = initializeRoleSettings();
@@ -277,6 +279,51 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     } catch (err: any) {
       console.error(err);
       setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handler for file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+      setImportError(null);
+      setUploadStatus(null);
+    }
+  };
+
+  // Handler for file upload
+  const handleImport = async () => {
+    if (!selectedFile) {
+      setImportError("Please select a CSV file to import.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("userId", userId.toString()); // Append userId
+
+    setLoading(true);
+    setImportError(null);
+    setUploadStatus(null);
+
+    try {
+      const response = await fetch("/api/employees/import", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to import employees.");
+      }
+
+      setUploadStatus("Employees imported successfully!");
+      setSelectedFile(null);
+    } catch (error: any) {
+      console.error("Import Error:", error);
+      setImportError(error.message);
     } finally {
       setLoading(false);
     }
@@ -769,7 +816,42 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         {activeTab === "Other" && (
           // Other settings
           <div className="flex flex-col mb-4">
-            <p>Nothing in here yet</p>
+            <p>Import employees from a CSV file.</p>
+            <input type="file" accept=".csv" onChange={handleFileChange} className="mt-2 mb-4" />
+            <button
+              type="button"
+              onClick={handleImport}
+              className={`py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-500 ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={loading}
+            >
+              {loading ? "Importing..." : "Import"}
+            </button>
+            {uploadStatus && (
+              <div className="mt-2 text-green-600 flex items-center">
+                <p>{uploadStatus}</p>
+                <button
+                  className="ml-2 text-xl font-bold leading-none"
+                  onClick={() => setUploadStatus(null)}
+                  aria-label="Close upload status message"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            {importError && (
+              <div className="mt-2 text-red-600 flex items-center">
+                <p>{importError}</p>
+                <button
+                  className="ml-2 text-xl font-bold leading-none"
+                  onClick={() => setImportError(null)}
+                  aria-label="Close import error message"
+                >
+                  ×
+                </button>
+              </div>
+            )}
           </div>
         )}
         {error && (
