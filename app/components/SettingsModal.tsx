@@ -131,10 +131,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   useEffect(() => {
     if (isOpen) {
       // Fetch shifts from the database
-      fetch("/api/shifts", {
+      fetch(`/api/shifts?userId=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: userId }),
       })
         .then((res) => res.json())
         .then((data) => setActiveShifts(data))

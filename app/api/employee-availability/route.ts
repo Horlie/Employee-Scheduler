@@ -10,14 +10,14 @@ export async function POST(request: Request) {
       where: {
         employeeId_startDate: {
           employeeId: parseInt(employeeId),
-          startDate: new Date(localToUTC(startDate)),
+          startDate: convertLocalDateToUTCIgnoringTimezone(new Date(startDate)),
         },
       },
-      update: { finishDate: new Date(localToUTC(finishDate)), status },
+      update: { finishDate: convertLocalDateToUTCIgnoringTimezone(new Date(finishDate)), status },
       create: {
         employeeId: parseInt(employeeId),
-        startDate: new Date(localToUTC(startDate)),
-        finishDate: new Date(localToUTC(finishDate)),
+        startDate: convertLocalDateToUTCIgnoringTimezone(new Date(startDate)),
+        finishDate: convertLocalDateToUTCIgnoringTimezone(new Date(finishDate)),
         status,
       },
     });
@@ -47,7 +47,7 @@ export async function DELETE(request: Request) {
       where: {
         employeeId_startDate: {
           employeeId: parseInt(employeeId),
-          startDate: new Date(startDate),
+          startDate: convertUTCToLocalDateIgnoringTimezone(new Date(startDate)),
         },
       },
     });
@@ -77,7 +77,10 @@ export async function GET(request: Request) {
         employeeId: parseInt(employeeId),
       },
     });
-
+    availability.forEach((availability) => {
+      availability.startDate = convertUTCToLocalDateIgnoringTimezone(availability.startDate);
+      availability.finishDate = convertUTCToLocalDateIgnoringTimezone(availability.finishDate);
+    });
     return NextResponse.json({ availability });
   } catch (error) {
     console.error("Error fetching employee availability:", error);
@@ -87,7 +90,28 @@ export async function GET(request: Request) {
   }
 }
 
-const localToUTC = (dateString: string) => {
-  const date = new Date(dateString);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-};
+export function convertLocalDateToUTCIgnoringTimezone(date: Date) {
+  const timestamp = Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+    date.getMilliseconds()
+  );
+
+  return new Date(timestamp);
+}
+
+export function convertUTCToLocalDateIgnoringTimezone(utcDate: Date) {
+  return new Date(
+    utcDate.getUTCFullYear(),
+    utcDate.getUTCMonth(),
+    utcDate.getUTCDate(),
+    utcDate.getUTCHours(),
+    utcDate.getUTCMinutes(),
+    utcDate.getUTCSeconds(),
+    utcDate.getUTCMilliseconds()
+  );
+}

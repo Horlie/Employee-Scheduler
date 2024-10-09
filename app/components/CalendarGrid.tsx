@@ -88,9 +88,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     finishDate: Date
   ) => {
     if (selectedEmployee && selectedDate) {
-      const cellKey = `${selectedEmployee.id}-${
-        localToUTC(selectedDate).toISOString().split("T")[0]
-      }`;
+      const cellKey = `${selectedEmployee.id}-${selectedDate.toISOString().split("T")[0]}`;
 
       if (action === "delete") {
         try {
@@ -210,8 +208,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             const newAvailability: EmployeeAvailability = {
               id: Date.now(), // Generate a temporary ID
               employeeId: Number(selectedEmployee.id),
-              startDate: localToUTC(startDate).toISOString(),
-              finishDate: localToUTC(finishDate).toISOString(),
+              startDate: startDate.toISOString(),
+              finishDate: finishDate.toISOString(),
               status,
               isFullDay: false,
             };
@@ -321,7 +319,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   );
 
   const renderAvailabilityTile = (employee: Employee, day: Date) => {
-    const cellKey = `${employee.id}-${localToUTC(day).toISOString().split("T")[0]}`;
+    const cellKey = `${employee.id}-${day.toISOString().split("T")[0]}`;
     const cellColor =
       cellColors[cellKey] ||
       `${
@@ -335,7 +333,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         a.employeeId === Number(employee.id) &&
         new Date(a.startDate).toDateString() === day.toDateString()
     );
-    const formatTime = (date: Date) => format(new Date(localToUTCPlus(date)), "HH:mm");
+    const formatTime = (date: Date) => format(new Date(date), "HH:mm");
 
     const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
 
@@ -355,10 +353,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       >
         {availability && (
           <div className="w-full h-full flex items-center justify-center text-xs px-1">
-            {localToUTCPlus(new Date(availability.startDate)).getHours() === 0 &&
-            localToUTCPlus(new Date(availability.startDate)).getMinutes() === 0 &&
-            localToUTCPlus(new Date(availability.finishDate)).getHours() === 23 &&
-            localToUTCPlus(new Date(availability.finishDate)).getMinutes() === 59 ? (
+            {new Date(availability.startDate).getHours() === 0 &&
+            new Date(availability.startDate).getMinutes() === 0 &&
+            new Date(availability.finishDate).getHours() === 23 &&
+            new Date(availability.finishDate).getMinutes() === 59 ? (
               <span className="text-gray-600 font-medium">All Day</span>
             ) : (
               <span className="text-gray-700 text-center">
@@ -427,14 +425,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       )}
     </div>
   );
-};
-
-const localToUTC = (date: Date) => {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-};
-
-const localToUTCPlus = (date: Date) => {
-  return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
 };
 
 export default CalendarGrid;

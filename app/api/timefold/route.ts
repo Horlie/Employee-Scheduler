@@ -291,8 +291,5 @@ function parseShiftTimes(
     endTime.setDate(endTime.getDate() + 1);
   }
 
-  return { startTime: localToUTC(startTime), endTime: localToUTC(endTime) };
+  return { startTime: startTime, endTime: endTime };
 }
-const localToUTC = (date: Date) => {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-};
