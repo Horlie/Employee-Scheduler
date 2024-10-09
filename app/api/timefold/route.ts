@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import {
   Employee,
   EmployeeAvailability,
   Shift,
   RoleSettings,
   DailyShiftSettings,
+  User,
 } from "@/app/types/scheduler";
 import { JsonValue } from "@prisma/client/runtime/library";
 
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
       },
     });
     // Build the TimeFold JSON
-    const timefoldJson = buildTimefoldJson(employees, shifts, user!, month);
+    const timefoldJson = buildTimefoldJson(employees, shifts, user as User, month);
 
     // Send POST request to BACKEND_URL/schedules
     const postResponse = await fetch(`${BACKEND_URL}/schedules`, {
@@ -152,7 +153,7 @@ function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User, m
     user.roleSettings as unknown as RoleSettings,
     shifts,
     user.dailyShiftSettings
-      ? user.dailyShiftSettings
+      ? (user.dailyShiftSettings as unknown as JsonValue)
       : { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 },
     month
   );
