@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { NextResponse } from "next/server";
+import { prisma } from "@/app/lib/prisma";
 
 export async function POST(request: Request) {
-  const { employeeId, startDate, finishDate, status } = await request.json();
   try {
+    await prisma.$connect();
+
+    const { employeeId, startDate, finishDate, status } = await request.json();
     const availability = await prisma.employeeAvailability.upsert({
       where: {
         employeeId_startDate: {
@@ -24,21 +24,25 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ availability });
   } catch (error) {
-    console.error('Error updating employee availability:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error updating employee availability:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const employeeId = searchParams.get('employeeId');
-  const startDate = searchParams.get('startDate');
-
-  if (!employeeId || !startDate) {
-    return NextResponse.json({ error: 'Missing employeeId or startDate' }, { status: 400 });
-  }
-
   try {
+    await prisma.$connect();
+
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get("employeeId");
+    const startDate = searchParams.get("startDate");
+
+    if (!employeeId || !startDate) {
+      return NextResponse.json({ error: "Missing employeeId or startDate" }, { status: 400 });
+    }
+
     await prisma.employeeAvailability.delete({
       where: {
         employeeId_startDate: {
@@ -48,33 +52,38 @@ export async function DELETE(request: Request) {
       },
     });
 
-    return NextResponse.json({ message: 'Availability deleted successfully' });
+    return NextResponse.json({ message: "Availability deleted successfully" });
   } catch (error) {
-    console.error('Error deleting employee availability:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error deleting employee availability:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const employeeId = searchParams.get('employeeId');
-
-  if (!employeeId) {
-    return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
-  }
-
   try {
+    await prisma.$connect();
+
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get("employeeId");
+
+    if (!employeeId) {
+      return NextResponse.json({ error: "Employee ID is required" }, { status: 400 });
+    }
+
     const availability = await prisma.employeeAvailability.findMany({
       where: {
         employeeId: parseInt(employeeId),
       },
     });
 
-
     return NextResponse.json({ availability });
   } catch (error) {
-    console.error('Error fetching employee availability:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error fetching employee availability:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
 

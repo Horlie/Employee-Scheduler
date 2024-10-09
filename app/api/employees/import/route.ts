@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { parse } from "csv-parse/sync";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/app/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
+    await prisma.$connect();
+
     // For demonstration, assume userId is sent in form data
     const formData = await request.formData();
     const userId = formData.get("userId");

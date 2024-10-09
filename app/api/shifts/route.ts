@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/app/lib/prisma";
 
 export async function GET(request: Request) {
   try {
+    await prisma.$connect();
+
     const { userId } = await request.json();
     const shifts = await prisma.shift.findMany({
       where: {
@@ -14,11 +14,15 @@ export async function GET(request: Request) {
     return NextResponse.json(shifts);
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch shifts." }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 export async function POST(request: Request) {
   try {
+    await prisma.$connect();
+
     const { add, delete: deleteIds } = await request.json();
 
     // Add new shifts
@@ -65,5 +69,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.log(error);
     return NextResponse.json({ error: "Failed to update shifts." }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }

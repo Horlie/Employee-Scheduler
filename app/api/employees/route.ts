@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/app/lib/prisma";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
-
-  if (!userId) {
-    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-  }
-
   try {
+    await prisma.$connect();
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    }
+
     const employees = await prisma.employee.findMany({
       where: {
         userId: parseInt(userId),
@@ -22,18 +22,22 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Error fetching employees:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json({ error: "Employee ID is required" }, { status: 400 });
-  }
-
   try {
+    await prisma.$connect();
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Employee ID is required" }, { status: 400 });
+    }
+
     await prisma.employee.delete({
       where: { id: parseInt(id) },
     });
@@ -42,13 +46,17 @@ export async function DELETE(request: Request) {
   } catch (error) {
     console.error("Error deleting employee:", error);
     return NextResponse.json({ error: "Failed to delete employee" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 export async function POST(request: Request) {
-  const { name, role, userId } = await request.json();
-
   try {
+    await prisma.$connect();
+
+    const { name, role, userId } = await request.json();
+
     const existingEmployee = await prisma.employee.findFirst({
       where: {
         name: name,
@@ -77,5 +85,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error creating employee:", error);
     return NextResponse.json({ error: "Failed to create employee" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }

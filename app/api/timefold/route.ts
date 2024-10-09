@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/app/lib/prisma";
+
 import {
   Employee,
   EmployeeAvailability,
@@ -10,108 +11,126 @@ import {
 } from "@/app/types/scheduler";
 import { JsonValue } from "@prisma/client/runtime/library";
 
-const prisma = new PrismaClient();
 const BACKEND_URL = process.env.BACKEND_URL;
 
 export async function POST(req: Request) {
-  const { employeeId, month } = await req.json();
-
   try {
-    // Fetch employees with their availabilities and roles
-    // Fetch all employees with their user information
-    const employees = await prisma.employee.findMany({
-      where: {
-        user: {
-          id: employeeId,
-        },
-      },
-      include: {
-        availability: true, // Include availability for each employee
-      },
-    });
+    await prisma.$connect();
 
-    // Fetch user settings (assuming a single user for simplicity)
+    const { employeeId, month } = await req.json();
 
-    const user = await prisma.user.findUnique({
-      where: {
-        id: employeeId,
-      },
-    });
-
-    // Fetch all shifts
-    const shifts = await prisma.shift.findMany({
-      where: {
-        user: {
-          id: employeeId,
-        },
-      },
-    });
-    // Build the TimeFold JSON
-    const timefoldJson = buildTimefoldJson(employees, shifts, user as User, month);
-
-    // Send POST request to BACKEND_URL/schedules
-    const postResponse = await fetch(`${BACKEND_URL}/schedules`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(timefoldJson),
-    });
-
-    // Add logging for POST response
-    const postText = await postResponse.text();
-    console.log("POST /schedules response:", postText);
-
-    // Send GET request to BACKEND_URL/scheduler/{jobId}
-    const getResponse = await fetch(`${BACKEND_URL}/schedules/${postText}`);
-    const getText = await getResponse.text();
-    console.log(`GET /schedules/${postText} response:`, getText);
-
-    let statusData: any;
     try {
-      statusData = JSON.parse(getText);
-    } catch (parseError) {
-      console.error("Error parsing GET response JSON:", parseError);
-      return NextResponse.json(
-        { error: "Invalid status response from scheduler service." },
-        { status: 500 }
-      );
-    }
+      // Fetch employees with their availabilities and roles
+      // Fetch all employees with their user information
+      const employees = await prisma.employee.findMany({
+        where: {
+          user: {
+            id: employeeId,
+          },
+        },
+        include: {
+          availability: true, // Include availability for each employee
+        },
+      });
 
-    // If solverStatus is NOT_SOLVING, return the status JSON
-    while (statusData.solverStatus !== "NOT_SOLVING") {
-      console.log("Waiting for solver to finish...");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Fetch user settings (assuming a single user for simplicity)
+
+      const user = await prisma.user.findUnique({
+        where: {
+          id: employeeId,
+        },
+      });
+
+      // Fetch all shifts
+      const shifts = await prisma.shift.findMany({
+        where: {
+          user: {
+            id: employeeId,
+          },
+        },
+      });
+      // Build the TimeFold JSON
+      const timefoldJson = buildTimefoldJson(employees, shifts, user as User, month);
+
+      // Send POST request to BACKEND_URL/schedules
+      const postResponse = await fetch(`${BACKEND_URL}/schedules`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(timefoldJson),
+      });
+
+      // Add logging for POST response
+      const postText = await postResponse.text();
+      console.log("POST /schedules response:", postText);
+
+      // Send GET request to BACKEND_URL/scheduler/{jobId}
       const getResponse = await fetch(`${BACKEND_URL}/schedules/${postText}`);
       const getText = await getResponse.text();
-      statusData = JSON.parse(getText);
+      console.log(`GET /schedules/${postText} response:`, getText);
+
+      let statusData: any;
+      try {
+        statusData = JSON.parse(getText);
+      } catch (parseError) {
+        console.error("Error parsing GET response JSON:", parseError);
+        return NextResponse.json(
+          { error: "Invalid status response from scheduler service." },
+          { status: 500 }
+        );
+      }
+
+      // If solverStatus is NOT_SOLVING, return the status JSON
+      while (statusData.solverStatus !== "NOT_SOLVING") {
+        console.log("Waiting for solver to finish...");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const getResponse = await fetch(`${BACKEND_URL}/schedules/${postText}`);
+        const getText = await getResponse.text();
+        statusData = JSON.parse(getText);
+      }
+      return NextResponse.json(statusData);
+    } catch (error) {
+      console.error("Error generating TimeFold JSON:", error);
+      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    } finally {
+      await prisma.$disconnect();
     }
-    return NextResponse.json(statusData);
   } catch (error) {
     console.error("Error generating TimeFold JSON:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const userId = url.searchParams.get("userId");
-
-  if (!userId) {
-    return NextResponse.json({ error: "Missing userId parameter." }, { status: 400 });
-  }
-
   try {
-    const schedule = await prisma.schedule.findMany({
-      where: {
-        userId: parseInt(userId),
-      },
-    });
+    await prisma.$connect();
 
-    if (!schedule) {
-      return NextResponse.json({ error: "Schedule not found." }, { status: 404 });
+    const url = new URL(req.url);
+    const userId = url.searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json({ error: "Missing userId parameter." }, { status: 400 });
     }
 
-    return NextResponse.json(schedule);
+    try {
+      const schedule = await prisma.schedule.findMany({
+        where: {
+          userId: parseInt(userId),
+        },
+      });
+
+      if (!schedule) {
+        return NextResponse.json({ error: "Schedule not found." }, { status: 404 });
+      }
+
+      return NextResponse.json(schedule);
+    } catch (error) {
+      console.error("Error fetching schedule:", error);
+      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    } finally {
+      await prisma.$disconnect();
+    }
   } catch (error) {
     console.error("Error fetching schedule:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

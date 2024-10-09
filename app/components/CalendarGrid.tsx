@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { getWeek, format } from "date-fns";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
@@ -46,7 +46,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
