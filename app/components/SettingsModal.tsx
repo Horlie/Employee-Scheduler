@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Shift } from "../types/scheduler";
+import { Employee, Shift } from "../types/scheduler";
+import { useEmployee } from "../context/EmployeeContext";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [endTime, setEndTime] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [userId, setUserId] = useState<number>(0); // Added userId state
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]); // Added selectedRoles state
   const [showAllShifts, setShowAllShifts] = useState(false);
@@ -28,6 +30,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [selectedFile, setSelectedFile] = useState<File | null>(null); // Added for file selection
   const [uploadStatus, setUploadStatus] = useState<string | null>(null); // Added for upload status
   const [importError, setImportError] = useState<string | null>(null); // Added for import errors
+  const [employeeName, setEmployeeName] = useState<string>("");
+  const [employeeRole, setEmployeeRole] = useState<string>("");
+  const [createEmployeeStatus, setCreateEmployeeStatus] = useState<string | null>(null);
+  const [createEmployeeError, setCreateEmployeeError] = useState<string | null>(null);
+  const { employees, setEmployees } = useEmployee();
 
   const initializeDailyShifts = () => ({
     Monday: 0,
@@ -318,7 +325,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         const data = await response.json();
         throw new Error(data.error || "Failed to import employees.");
       }
-
+      const data = await response.json();
+      data.employeesToCreate.forEach((employee: Employee) => {
+        setEmployees((prevEmployees) => [
+          ...prevEmployees,
+          {
+            id: new Date().getTime(),
+            name: employee.name,
+            role: employee.role,
+            userId: userId,
+            rate: 1.0,
+          },
+        ]);
+      });
       setUploadStatus("Employees imported successfully!");
       setSelectedFile(null);
     } catch (error: any) {
@@ -328,6 +347,36 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setLoading(false);
     }
   };
+
+  async function handleCreateEmployee(name: string, role: string) {
+    setCreating(true);
+    setCreateEmployeeStatus(null);
+    setCreateEmployeeError(null);
+    try {
+      const response = await fetch("/api/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, name, role }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create employee.");
+      }
+
+      setCreateEmployeeStatus("Employee created successfully!");
+      setEmployeeName("");
+      setEmployeeRole("");
+    } catch (error: any) {
+      console.error("Error creating employee:", error);
+      setCreateEmployeeError("Failed to create employee. Please try again.");
+    } finally {
+      setCreating(false);
+      setEmployees((prevEmployees) => [
+        ...prevEmployees,
+        { id: new Date().getTime(), name, role, userId, rate: 1.0 },
+      ]);
+    }
+  }
 
   if (!isOpen) return null;
 
@@ -369,7 +418,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
             Other
           </a>
         </div>
-
         {activeTab === "General" && (
           <>
             <div className="flex flex-col w-full max-w-2xl mx-auto">
@@ -852,6 +900,68 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 </button>
               </div>
             )}
+            {/* Separator with "or" */}
+            <div className="flex items-center my-4">
+              <hr className="flex-grow border-t" />
+              <span className="mx-2 text-gray-500">or</span>
+              <hr className="flex-grow border-t" />
+            </div>
+            {/* Form to create a single employee */}
+            <div className="flex flex-col">
+              <p>Create a single employee.</p>
+              <input
+                type="text"
+                placeholder="Employee Name"
+                value={employeeName}
+                onChange={(e) => {
+                  setEmployeeName(e.target.value);
+                }}
+                className="mt-2 p-2 border border-gray-300 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Role"
+                value={employeeRole}
+                onChange={(e) => {
+                  setEmployeeRole(e.target.value);
+                }}
+                className="mt-2 p-2 border border-gray-300 rounded"
+              />
+              <button
+                type="button"
+                onClick={() => handleCreateEmployee(employeeName, employeeRole)}
+                className={`py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-500 mt-4 ${
+                  creating ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                disabled={creating}
+              >
+                {creating ? "Creating..." : "Create Employee"}
+              </button>
+              {createEmployeeStatus && (
+                <div className="mt-2 text-green-600 flex items-center">
+                  <p>{createEmployeeStatus}</p>
+                  <button
+                    className="ml-2 text-xl font-bold leading-none"
+                    onClick={() => setCreateEmployeeStatus(null)}
+                    aria-label="Close create employee status message"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              {createEmployeeError && (
+                <div className="mt-2 text-red-600 flex items-center">
+                  <p>{createEmployeeError}</p>
+                  <button
+                    className="ml-2 text-xl font-bold leading-none"
+                    onClick={() => setCreateEmployeeError(null)}
+                    aria-label="Close create employee error message"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
         {error && (
@@ -867,16 +977,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
           </div>
         )}
         <div className="flex flex-row-reverse gap-2 mt-4 border-t border-gray-300 pt-4">
-          <button
-            type="button"
-            className={`py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-500 w-full ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            onClick={applyChanges}
-            disabled={loading}
-          >
-            {loading ? "Applying..." : "Apply"}
-          </button>
+          {activeTab !== "Other" && (
+            <button
+              type="button"
+              className={`py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-500 w-full ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              onClick={applyChanges}
+              disabled={loading}
+            >
+              {loading ? "Applying..." : "Apply"}
+            </button>
+          )}
           <button
             className="py-1.5 border border-indigo-600 bg-white text-indigo-600 rounded hover:bg-indigo-600 hover:text-white w-full"
             onClick={onClose}

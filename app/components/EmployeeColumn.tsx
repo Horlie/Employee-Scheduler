@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Employee } from "../types/scheduler";
 import RateToolTip from "./RateToolTip";
 import { useEmployee } from "../context/EmployeeContext";
@@ -51,6 +51,58 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
     setTooltipPosition(null);
   };
 
+  // New state to manage the dropdown menu
+  const [dropdownEmployeeId, setDropdownEmployeeId] = useState<string | null>(null);
+
+  // Add a ref to the dropdown
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Effect to handle clicks outside the dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownEmployeeId(null);
+      }
+    };
+
+    if (dropdownEmployeeId) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownEmployeeId]);
+
+  // Function to toggle the dropdown menu
+  const toggleDropdown = (employeeId: string) => {
+    setDropdownEmployeeId((prev) => (prev === employeeId ? null : employeeId));
+  };
+
+  // Function to handle deletion of an employee
+  const handleDelete = async (employeeId: string) => {
+    try {
+      const response = await fetch(`/api/employees?id=${employeeId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete employee");
+      }
+
+      setEmployees((prevEmployees) =>
+        prevEmployees.filter((emp) => emp.id.toString() !== employeeId)
+      );
+      setDropdownEmployeeId(null);
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      // You might want to show an error message to the user here
+    }
+  };
+
   return (
     <div className={`w-48 flex-shrink-0 flex flex-col bg-white`}>
       {renderGroupSeparator("")}
@@ -99,6 +151,28 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                       </span>
                     )}
                   </div>
+                </div>
+
+                <div className="relative ml-auto">
+                  <button
+                    onClick={() => toggleDropdown(employee.id.toString())}
+                    className="focus:outline-none"
+                  >
+                    ⋮
+                  </button>
+                  {dropdownEmployeeId === employee.id.toString() && showTooltips && (
+                    <div
+                      ref={dropdownRef} // Attach the ref to the dropdown
+                      className="absolute right-2 top-0 mt-2 w-24 bg-white border rounded shadow z-50"
+                    >
+                      <button
+                        onClick={() => handleDelete(employee.id.toString())}
+                        className="block px-4 py-2 text-left w-full hover:bg-gray-100 text-red-500"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

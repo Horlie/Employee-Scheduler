@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
       name: record[0],
       role: record[1],
       userId: Number(userId),
-      // Add other fields as necessary
     }));
     console.log(employeesToCreate);
     // Insert employees into the database
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest) {
       data: employeesToCreate,
     });
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({ success: true, employeesToCreate }, { status: 200 });
   } catch (error) {
     console.error("Import Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
