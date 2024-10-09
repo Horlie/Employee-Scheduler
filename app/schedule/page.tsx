@@ -7,7 +7,7 @@ import Navigation from "../components/Navigation";
 import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import { Employee, EmployeeAvailability, TimefoldShift } from "../types/scheduler";
-
+import { formatInTimeZone } from "date-fns-tz";
 export default function Schedule() {
   const {
     employees,
@@ -69,9 +69,6 @@ export default function Schedule() {
     }
   }, [needsRefresh]);
 
-  const localToUTC = (date: Date) => {
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  };
   // Function to get employee ID by name from localStorage
   const getEmployeeIdByName = (name: string) => {
     const employee = employees.find((emp: Employee) => emp.name === name);
@@ -104,8 +101,8 @@ export default function Schedule() {
       return {
         id: parseInt(shift.id),
         employeeId,
-        startDate: localToUTC(new Date(shift.start)),
-        finishDate: localToUTC(new Date(shift.end)),
+        startDate: new Date(shift.start),
+        finishDate: new Date(shift.end),
         status: "scheduled",
       } as EmployeeAvailability;
     });
@@ -114,9 +111,11 @@ export default function Schedule() {
 
     const newCellColors: Record<string, string> = {};
     parsedData.forEach((availability: EmployeeAvailability) => {
-      const cellKey = `${availability.employeeId}-${
-        new Date(availability.startDate).toISOString().split("T")[0]
-      }`;
+      const cellKey = `${availability.employeeId}-${formatInTimeZone(
+        new Date(availability.startDate),
+        "UTC",
+        "yyyy-MM-dd"
+      )}`;
       switch (availability.status) {
         case "scheduled":
           isFullDay.get(availability.id)

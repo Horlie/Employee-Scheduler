@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { getWeek, format } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
 
 interface CalendarGridProps {
@@ -88,8 +89,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     finishDate: Date
   ) => {
     if (selectedEmployee && selectedDate) {
-      const cellKey = `${selectedEmployee.id}-${selectedDate.toISOString().split("T")[0]}`;
-
+      const cellKey = `${selectedEmployee.id}-${
+        fromZonedTime(startDate, "UTC").toISOString().split("T")[0]
+      }`;
       if (action === "delete") {
         try {
           const availability = availabilityData.find(
@@ -99,11 +101,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           );
           if (availability) {
             const startDate = availability ? new Date(availability.startDate) : selectedDate;
-            const finishDate = availability ? new Date(availability.finishDate) : selectedDate;
             const response = await fetch(
               `/api/employee-availability?employeeId=${
                 selectedEmployee.id
-              }&startDate=${startDate.toISOString()}&finishDate=${finishDate.toISOString()}`,
+              }&startDate=${fromZonedTime(startDate, "UTC").toISOString()}`,
               {
                 method: "DELETE",
               }
@@ -116,16 +117,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                 return newColors;
               });
               setAvailabilityData((prev) => {
-                return prev
-                  .flat()
-                  .filter(
-                    (a: EmployeeAvailability) =>
-                      !(
-                        a.employeeId === Number(selectedEmployee.id) &&
-                        a.startDate === startDate.toISOString() &&
-                        a.finishDate === finishDate.toISOString()
-                      )
-                  );
+                const updatedAvailability = prev.filter(
+                  (a: EmployeeAvailability) =>
+                    !(
+                      a.employeeId === Number(selectedEmployee.id) &&
+                      new Date(a.startDate).toDateString() === selectedDate.toDateString()
+                    )
+                );
+                return updatedAvailability;
               });
             }
           } else {
@@ -143,23 +142,23 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         if (existingAvailability) {
           try {
             const deleteResponse = await fetch(
-              `/api/employee-availability?employeeId=${selectedEmployee.id}&startDate=${existingAvailability.startDate}&finishDate=${existingAvailability.finishDate}`,
+              `/api/employee-availability?employeeId=${
+                selectedEmployee.id
+              }&startDate=${fromZonedTime(existingAvailability.startDate, "UTC").toISOString()}`,
               {
                 method: "DELETE",
               }
             );
             if (deleteResponse.ok) {
               setAvailabilityData((prev) => {
-                return prev
-                  .flat()
-                  .filter(
-                    (a: EmployeeAvailability) =>
-                      !(
-                        a.employeeId === Number(selectedEmployee.id) &&
-                        a.startDate === existingAvailability.startDate &&
-                        a.finishDate === existingAvailability.finishDate
-                      )
-                  );
+                const updatedAvailability = prev.filter(
+                  (a: EmployeeAvailability) =>
+                    !(
+                      a.employeeId === Number(selectedEmployee.id) &&
+                      new Date(a.startDate).toDateString() === selectedDate.toDateString()
+                    )
+                );
+                return updatedAvailability;
               });
             }
             if (!deleteResponse.ok) {
@@ -319,7 +318,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   );
 
   const renderAvailabilityTile = (employee: Employee, day: Date) => {
-    const cellKey = `${employee.id}-${day.toISOString().split("T")[0]}`;
+    const cellKey = `${employee.id}-${fromZonedTime(day, "UTC").toISOString().split("T")[0]}`;
     const cellColor =
       cellColors[cellKey] ||
       `${

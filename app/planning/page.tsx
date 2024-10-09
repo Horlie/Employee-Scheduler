@@ -7,6 +7,7 @@ import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { fromZonedTime } from "date-fns-tz";
 
 export default function Planning() {
   const {
@@ -43,25 +44,22 @@ export default function Planning() {
         setEmployees(data.employees);
 
         // Fetch availability for all employees
-        const availabilityPromises = data.employees.map(async (employee: Employee) => {
-          const availabilityResponse = await fetch(
-            `/api/employee-availability?employeeId=${employee.id}`
-          );
-          if (availabilityResponse.ok) {
-            const availabilityData = await availabilityResponse.json();
-            return availabilityData.availability;
-          }
-          return [];
-        });
-
-        const allAvailability: EmployeeAvailability[] = await Promise.all(availabilityPromises);
+        const employeeIds = data.employees.map((employee: Employee) => employee.id).join(",");
+        const availabilityResponse = await fetch(
+          `/api/employee-availability?employeeIds=${employeeIds}`
+        );
+        let allAvailability: EmployeeAvailability[] = [];
+        if (availabilityResponse.ok) {
+          const availabilityData = await availabilityResponse.json();
+          allAvailability = availabilityData.availability;
+        }
         setAvailabilityData(allAvailability.flat());
 
         // Update cell colors based on fetched availability
         const newCellColors: Record<string, string> = {};
         allAvailability.flat().forEach((availability: EmployeeAvailability) => {
           const cellKey = `${availability.employeeId}-${
-            new Date(availability.startDate).toISOString().split("T")[0]
+            fromZonedTime(availability.startDate, "UTC").toISOString().split("T")[0]
           }`;
           switch (availability.status) {
             case "unavailable":

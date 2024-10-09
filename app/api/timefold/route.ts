@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
+import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 
 import {
   Employee,
@@ -140,32 +141,32 @@ export async function GET(req: Request) {
 function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User, month: number) {
   const timefoldEmployees = employees.map((employee: Employee) => ({
     name: employee.name,
-    skills: [employee.role], // Assuming 'role' is a string
+    skills: [employee.role],
     unavailableIntervals: employee.availability
       ? employee.availability
           .filter((a: EmployeeAvailability) => a.status === "unreachable")
           .map((a: EmployeeAvailability) => ({
-            start: a.startDate,
-            end: a.finishDate,
+            start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+            end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
           }))
       : [],
     undesiredIntervals: employee.availability
       ? employee.availability
           .filter((a: EmployeeAvailability) => a.status === "unavailable")
           .map((a: EmployeeAvailability) => ({
-            start: a.startDate,
-            end: a.finishDate,
+            start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+            end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
           }))
       : [],
     desiredIntervals: employee.availability
       ? employee.availability
           .filter((a: EmployeeAvailability) => a.status === "preferable")
           .map((a: EmployeeAvailability) => ({
-            start: a.startDate,
-            end: a.finishDate,
+            start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+            end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
           }))
       : [],
-    monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * employee.rate) : 160, // 160 for standard
+    monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * employee.rate) : 160,
   }));
 
   const timefoldShifts = generateMonthlyShifts(
@@ -220,8 +221,8 @@ function generateMonthlyShifts(
               const { startTime, endTime } = getShiftTimes(shift, date);
               timefoldShifts.push({
                 id: timefoldShifts.length + 1,
-                start: startTime.toISOString().slice(0, -5),
-                end: endTime.toISOString().slice(0, -5),
+                start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+                end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
                 location: "Hospital",
                 requiredSkill: role,
                 isFullDay: shift.isFullDay,
@@ -239,8 +240,8 @@ function generateMonthlyShifts(
               const { startTime, endTime } = getShiftTimes(shift, date);
               timefoldShifts.push({
                 id: timefoldShifts.length + 1,
-                start: startTime.toISOString().slice(0, -5),
-                end: endTime.toISOString().slice(0, -5),
+                start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+                end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
                 location: "Hospital",
                 requiredSkill: role,
                 isFullDay: shift.isFullDay,
@@ -257,8 +258,7 @@ function generateMonthlyShifts(
 
 function getShiftTimes(shift: Shift, date: Date): { startTime: Date; endTime: Date } {
   const { startTime, endTime } = parseShiftTimes(shift.startTime, shift.endTime, date);
-
-  return { startTime: startTime, endTime: endTime };
+  return { startTime, endTime };
 }
 
 function parseShiftTimes(
@@ -268,28 +268,28 @@ function parseShiftTimes(
 ): { startTime: Date; endTime: Date } {
   const [startHour, startMinute, startSecond] = startTimeStr.split(":").map(Number);
   const [endHour, endMinute, endSecond] = endTimeStr.split(":").map(Number);
-  let currentDate = new Date(date);
-  const startTime = new Date(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    currentDate.getDate(),
-    startHour,
-    startMinute,
-    startSecond
+
+  const startTime = fromZonedTime(
+    new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      startHour,
+      startMinute,
+      startSecond
+    ),
+    "UTC"
   );
-  const endTime = new Date(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    currentDate.getDate(),
-    endHour,
-    endMinute,
-    endSecond
+
+  let endTime = fromZonedTime(
+    new Date(date.getFullYear(), date.getMonth(), date.getDate(), endHour, endMinute, endSecond),
+    "UTC"
   );
 
   // If end time is earlier than start time, assume it goes to the next day
   if (endTime <= startTime) {
-    endTime.setDate(endTime.getDate() + 1);
+    endTime = new Date(endTime.getTime() + 24 * 60 * 60 * 1000);
   }
 
-  return { startTime: startTime, endTime: endTime };
+  return { startTime, endTime };
 }

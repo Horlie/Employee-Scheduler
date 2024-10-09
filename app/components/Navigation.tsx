@@ -19,12 +19,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePag
   const [isLoading, setIsLoading] = useState(false);
   const loadingRef = useRef(false);
 
-  const handleNavigation = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-  };
+  const handleNavigation = () => {};
 
   if (!isLoggedIn) return null;
 

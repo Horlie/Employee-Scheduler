@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
+import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 
 export async function POST(request: Request) {
   try {
@@ -47,7 +48,7 @@ export async function DELETE(request: Request) {
       where: {
         employeeId_startDate: {
           employeeId: parseInt(employeeId),
-          startDate: convertUTCToLocalDateIgnoringTimezone(new Date(startDate)),
+          startDate: new Date(startDate),
         },
       },
     });
@@ -66,22 +67,28 @@ export async function GET(request: Request) {
     await prisma.$connect();
 
     const { searchParams } = new URL(request.url);
-    const employeeId = searchParams.get("employeeId");
+    const employeeIds = searchParams.get("employeeIds");
 
-    if (!employeeId) {
-      return NextResponse.json({ error: "Employee ID is required" }, { status: 400 });
+    if (!employeeIds) {
+      return NextResponse.json({ error: "Employee IDs are required" }, { status: 400 });
     }
+
+    const parsedEmployeeIds = employeeIds.split(",").map((id) => parseInt(id));
 
     const availability = await prisma.employeeAvailability.findMany({
       where: {
-        employeeId: parseInt(employeeId),
+        employeeId: {
+          in: parsedEmployeeIds,
+        },
       },
     });
-    availability.forEach((availability) => {
-      availability.startDate = convertUTCToLocalDateIgnoringTimezone(availability.startDate);
-      availability.finishDate = convertUTCToLocalDateIgnoringTimezone(availability.finishDate);
-    });
-    return NextResponse.json({ availability });
+
+    const convertedAvailability = availability.map((avail) => ({
+      ...avail,
+      startDate: convertUTCToLocalDateIgnoringTimezone(avail.startDate),
+      finishDate: convertUTCToLocalDateIgnoringTimezone(avail.finishDate),
+    }));
+    return NextResponse.json({ availability: convertedAvailability });
   } catch (error) {
     console.error("Error fetching employee availability:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -89,29 +96,11 @@ export async function GET(request: Request) {
     await prisma.$disconnect();
   }
 }
-
-export function convertLocalDateToUTCIgnoringTimezone(date: Date) {
-  const timestamp = Date.UTC(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    date.getHours(),
-    date.getMinutes(),
-    date.getSeconds(),
-    date.getMilliseconds()
-  );
-
-  return new Date(timestamp);
+function convertLocalDateToUTCIgnoringTimezone(date: Date) {
+  // Assume the input date is in local time, convert it to UTC
+  return fromZonedTime(date, "UTC");
 }
 
-export function convertUTCToLocalDateIgnoringTimezone(utcDate: Date) {
-  return new Date(
-    utcDate.getUTCFullYear(),
-    utcDate.getUTCMonth(),
-    utcDate.getUTCDate(),
-    utcDate.getUTCHours(),
-    utcDate.getUTCMinutes(),
-    utcDate.getUTCSeconds(),
-    utcDate.getUTCMilliseconds()
-  );
+function convertUTCToLocalDateIgnoringTimezone(utcDate: Date) {
+  return formatInTimeZone(utcDate, "UTC", "yyyy-MM-dd'T'HH:mm:ss");
 }
