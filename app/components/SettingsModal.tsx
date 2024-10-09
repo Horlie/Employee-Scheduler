@@ -176,7 +176,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     Sunday: data.roleSettings[role].Sunday,
                   };
                 } else {
-                  console.warn(`RoleSettings for "${role}" is missing. Using default values.`);
+                  console.warn(`RoleSettings missing. Using default values.`);
                 }
               });
               if (data.dailyShiftSettings) {
@@ -257,7 +257,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         const response = await fetch("/api/shifts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete }),
+          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete, userId: userId }),
         });
 
         if (!response.ok) {

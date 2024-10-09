@@ -5,10 +5,16 @@ export async function GET(request: Request) {
   try {
     await prisma.$connect();
 
-    const { userId } = await request.json();
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json({ error: "UserId is required." }, { status: 400 });
+    }
+
     const shifts = await prisma.shift.findMany({
       where: {
-        userId: userId,
+        userId: parseInt(userId),
       },
     });
     return NextResponse.json(shifts);
@@ -23,18 +29,17 @@ export async function POST(request: Request) {
   try {
     await prisma.$connect();
 
-    const { add, delete: deleteIds } = await request.json();
+    const { add, delete: deleteIds, userId } = await request.json();
+
+    if (!userId || isNaN(parseInt(userId))) {
+      return NextResponse.json({ error: "Invalid userId." }, { status: 400 });
+    }
 
     // Add new shifts
     if (add && Array.isArray(add)) {
       for (const shift of add) {
-        const userId = parseInt(shift.userId);
-        if (isNaN(userId)) {
-          return NextResponse.json({ error: "Invalid userId." }, { status: 400 });
-        }
-
         // Check if the user exists
-        const userExists = await prisma.user.findUnique({ where: { id: userId } });
+        const userExists = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
         if (!userExists) {
           return NextResponse.json(
             { error: `User with id ${userId} does not exist.` },
@@ -49,7 +54,7 @@ export async function POST(request: Request) {
             isFullDay: shift.isFullDay,
             days: { set: shift.days },
             role: { set: shift.role },
-            user: { connect: { id: userId } },
+            userId: parseInt(userId),
           },
         });
       }
@@ -57,17 +62,22 @@ export async function POST(request: Request) {
 
     // Delete shifts
     if (deleteIds && Array.isArray(deleteIds)) {
-      for (const id of deleteIds) {
-        await prisma.shift.delete({
-          where: { id },
-        });
-      }
+      await prisma.shift.deleteMany({
+        where: {
+          id: { in: deleteIds },
+          userId: parseInt(userId),
+        },
+      });
     }
 
-    const updatedShifts = await prisma.shift.findMany();
+    const updatedShifts = await prisma.shift.findMany({
+      where: {
+        userId: parseInt(userId),
+      },
+    });
     return NextResponse.json(updatedShifts);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return NextResponse.json({ error: "Failed to update shifts." }, { status: 500 });
   } finally {
     await prisma.$disconnect();
