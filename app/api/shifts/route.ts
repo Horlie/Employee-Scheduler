@@ -3,9 +3,14 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const shifts = await prisma.shift.findMany();
+    const { userId } = await request.json();
+    const shifts = await prisma.shift.findMany({
+      where: {
+        userId: userId,
+      },
+    });
     return NextResponse.json(shifts);
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch shifts." }, { status: 500 });

@@ -46,7 +46,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
         <form onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="Email"
+            placeholder="Login"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full mb-2 p-2 border rounded"
