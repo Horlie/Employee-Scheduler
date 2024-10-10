@@ -188,13 +188,15 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         }
 
         try {
+          // Convert local dates to UTC
+
           const response = await fetch("/api/employee-availability", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               employeeId: Number(selectedEmployee.id),
-              startDate: startDate.toISOString(),
-              finishDate: finishDate.toISOString(),
+              startDate: startDate,
+              finishDate: finishDate,
               status,
             }),
           });
