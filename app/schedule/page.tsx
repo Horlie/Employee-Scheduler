@@ -128,15 +128,33 @@ export default function Schedule() {
     setCellScheduleColors(newCellColors);
 
     // Calculate total hours for each employee
-    const totals: Map<number, number> = new Map();
+    const totals: Map<number, Map<number, number>> = new Map();
+    let prevMonth: number | null = null;
+
     parsedData.forEach((availability: EmployeeAvailability) => {
       const start = new Date(availability.startDate);
       const finish = new Date(availability.finishDate);
       const hours = (finish.getTime() - start.getTime()) / 3600000; // Convert ms to hours
-      totals.set(availability.employeeId, (totals.get(availability.employeeId) || 0) + hours);
-      // Start of Selection
+      const currentMonth = start.getMonth() + 1;
+      if (prevMonth !== currentMonth) {
+        if (!totals.has(currentMonth)) {
+          totals.set(currentMonth, new Map());
+        }
+        prevMonth = currentMonth;
+      }
+
+      const monthTotals = totals.get(currentMonth)!;
+      monthTotals.set(
+        availability.employeeId,
+        (monthTotals.get(availability.employeeId) || 0) + hours
+      );
     });
-    setEmployeeHours({ [new Date(parsedData[0].startDate).getMonth() + 1]: totals });
+
+    const employeeHoursObj: Record<number, Map<number, number>> = {};
+    totals.forEach((value, key) => {
+      employeeHoursObj[key] = value;
+    });
+    setEmployeeHours(employeeHoursObj);
   }
   const handleRefresh = (value: boolean) => {
     setNeedsRefresh(value);

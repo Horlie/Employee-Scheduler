@@ -25,7 +25,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
     <div
       className={`flex bg-gray-100 justify-between items-center px-10 py-5 border-b border-gray-300`}
     >
-      <div className="text-left ml-3 text-lg text-gray-700 font-bold uppercase tracking-widest">
+      <div className="text-left ml-3 text-2xl text-gray-700 font-bold uppercase tracking-widest">
         {currentDate.toLocaleString("en-GB", {
           month: "long",
           year: "numeric",
@@ -41,10 +41,10 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
               &lt;
             </button>
             <button
-              className="px-3 py-1.5 bg-white font-medium border-y border-gray-300 hover:bg-gray-100"
+              className="px-3 py-1.5 bg-white font-medium border border-gray-300 hover:bg-gray-100"
               onClick={onToday}
             >
-              Today
+              Current Month
             </button>
             <button
               className="px-3 py-1.5 bg-white rounded-r text-gray-400 pb-1.5 border border-l-0 border-gray-300 hover:text-gray-500 hover:bg-gray-100"

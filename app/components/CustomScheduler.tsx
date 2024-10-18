@@ -197,6 +197,10 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
 
     const currentMonth = currentDate.getMonth();
 
+    console.log(
+      `Sending request to /api/timefold with employeeId: ${employeeId}, month: ${currentMonth}`
+    );
+
     // Make POST request using fetch
     fetch("/api/timefold", {
       method: "POST",
@@ -208,13 +212,19 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         month: currentMonth,
       }),
     })
-      .then((response) => {
+      .then(async (response) => {
+        console.log(`Received response from /api/timefold. Status: ${response.status}`);
         if (!response.ok) {
-          throw new Error("Network response was not ok");
+          const errorText = await response.text();
+          console.error(`Error response body: ${errorText}`);
+          throw new Error(
+            `Network response was not ok: ${response.status} ${response.statusText}. Error: ${errorText}`
+          );
         }
         return response.json();
       })
       .then((data) => {
+        console.log("Successfully received data from /api/timefold. Saving to database...");
         // Save the received schedule data to the database
         return fetch("/api/saveSchedule", {
           method: "POST",
@@ -228,18 +238,25 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
           }),
         });
       })
-      .then((saveResponse) => {
+      .then(async (saveResponse) => {
+        console.log(`Received response from /api/saveSchedule. Status: ${saveResponse.status}`);
         if (!saveResponse.ok) {
-          throw new Error("Failed to save schedule to the database");
+          const errorText = await saveResponse.text();
+          console.error(`Error response body: ${errorText}`);
+          throw new Error(
+            `Failed to save schedule to the database: ${saveResponse.status} ${saveResponse.statusText}. Error: ${errorText}`
+          );
         }
         return saveResponse.json();
       })
       .then((saveData) => {
+        console.log("Schedule successfully saved to database.");
         needsRefresh(true);
+        alert("Schedule solved and saved successfully!");
       })
       .catch((error) => {
         console.error("Error solving schedule:", error);
-        alert("An error occurred while solving the schedule."); // Notify the user
+        alert(`An error occurred while solving the schedule: ${error.message}`);
       })
       .finally(() => {
         setLoading(false);
