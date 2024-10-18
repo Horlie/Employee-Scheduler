@@ -48,14 +48,16 @@ export interface User {
 }
 
 export interface RoleSettings {
-  role?: {
-    Monday?: number;
-    Tuesday?: number;
-    Wednesday?: number;
-    Thursday?: number;
-    Friday?: number;
-    Saturday?: number;
-    Sunday?: number;
+  [role: string]: {
+    [shift: string]: {
+      Monday?: number;
+      Tuesday?: number;
+      Wednesday?: number;
+      Thursday?: number;
+      Friday?: number;
+      Saturday?: number;
+      Sunday?: number;
+    };
   };
 }
 

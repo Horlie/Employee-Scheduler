@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       data: {
         email,
         password: hashedPassword,
+        roleSettings: {},
         // Add other fields if necessary
       },
     });

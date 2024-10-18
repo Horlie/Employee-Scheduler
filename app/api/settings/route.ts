@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   try {
     await prisma.$connect();
 
-    const { email, monthlyHours, dailyShiftSettings, roleSettings } = await request.json();
+    const { email, monthlyHours, roleSettings } = await request.json();
 
     // Validate presence of email an
     if (!email) {
@@ -14,15 +14,10 @@ export async function POST(request: Request) {
     }
 
     // If only email an are present, treat it as a fetch request
-    if (
-      monthlyHours === undefined &&
-      dailyShiftSettings === undefined &&
-      roleSettings === undefined
-    ) {
+    if (monthlyHours === undefined && roleSettings === undefined) {
       const settings = await prisma.user.findUnique({
         where: { email: email },
         select: {
-          dailyShiftSettings: true,
           monthlyHours: true,
           roleSettings: true,
         },
@@ -37,19 +32,14 @@ export async function POST(request: Request) {
     }
 
     // Validate input
-    if (
-      typeof dailyShiftSettings !== "object" ||
-      typeof monthlyHours !== "number" ||
-      typeof roleSettings !== "object"
-    ) {
-      console.log("Invalid input received:", { dailyShiftSettings, monthlyHours, roleSettings });
+    if (typeof monthlyHours !== "number" || typeof roleSettings !== "object") {
+      console.log("Invalid input received:", { monthlyHours, roleSettings });
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
     const updatedSettings = await prisma.user.update({
       where: { email: email },
       data: {
-        dailyShiftSettings,
         monthlyHours,
         roleSettings,
       },

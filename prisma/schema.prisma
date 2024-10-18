@@ -16,7 +16,6 @@ model User {
   employees Employee[]
   shifts    Shift[]
   schedules Schedule[]
-  dailyShiftSettings Json?
   monthlyHours Int?
   roleSettings Json?
 }

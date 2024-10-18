@@ -174,9 +174,6 @@ function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User, m
   const timefoldShifts = generateMonthlyShifts(
     user.roleSettings as unknown as RoleSettings,
     shifts,
-    user.dailyShiftSettings
-      ? (user.dailyShiftSettings as unknown as JsonValue)
-      : { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 },
     month
   );
 
@@ -186,12 +183,7 @@ function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User, m
   };
 }
 
-function generateMonthlyShifts(
-  roleSettings: RoleSettings,
-  shifts: Shift[],
-  dailyShiftSettings: JsonValue,
-  month: number
-) {
+function generateMonthlyShifts(roleSettings: RoleSettings, shifts: Shift[], month: number) {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -211,44 +203,29 @@ function generateMonthlyShifts(
     const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
       dayOfWeek
     ];
+
     shifts.forEach((shift) => {
-      if (shift.days.includes(dayName) && !shift.isFullDay) {
+      if (shift.days.includes(dayName)) {
         shift.role.forEach((role) => {
+          const shiftString = shift.isFullDay
+            ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)})`
+            : `${shift.startTime.slice(0, -3)}-${shift.endTime.slice(0, -3)}`;
+
           const shiftCount =
-            roleSettings[role as keyof RoleSettings]?.[
-              dayName as keyof RoleSettings[keyof RoleSettings]
-            ] ?? 0;
-          if (typeof shiftCount === "number") {
-            for (let i = 0; i < shiftCount; i++) {
-              const { startTime, endTime } = getShiftTimes(shift, date);
-              timefoldShifts.push({
-                id: timefoldShifts.length + 1,
-                start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-                end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-                location: "Hospital",
-                requiredSkill: role,
-                isFullDay: shift.isFullDay,
-              });
-            }
-          }
-        });
-      } else if (shift.days.includes(dayName) && shift.isFullDay) {
-        shift.role.forEach((role) => {
-          const shiftCount = dailyShiftSettings
-            ? (dailyShiftSettings as DailyShiftSettings)[dayName as keyof DailyShiftSettings]
-            : 0;
-          if (typeof shiftCount === "number") {
-            for (let i = 0; i < shiftCount; i++) {
-              const { startTime, endTime } = getShiftTimes(shift, date);
-              timefoldShifts.push({
-                id: timefoldShifts.length + 1,
-                start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-                end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-                location: "Hospital",
-                requiredSkill: role,
-                isFullDay: shift.isFullDay,
-              });
-            }
+            roleSettings[role]?.[shiftString]?.[
+              dayName as keyof (typeof roleSettings)[typeof role][typeof shiftString]
+            ] || 0;
+
+          for (let i = 0; i < shiftCount; i++) {
+            const { startTime, endTime } = getShiftTimes(shift, date);
+            timefoldShifts.push({
+              id: timefoldShifts.length + 1,
+              start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              location: "Hospital",
+              requiredSkill: role,
+              isFullDay: shift.isFullDay,
+            });
           }
         });
       }
