@@ -18,11 +18,12 @@ export default function Schedule() {
     setScheduleData,
     activeMonth,
     setActiveMonth,
+    availabilityData,
   } = useEmployee();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const isFullDay: Map<number, boolean> = new Map();
+  const [isFullDay, setIsFullDay] = useState<Map<number, boolean>>(new Map());
   const [employeeHours, setEmployeeHours] = useState<Record<number, Map<number, number>>>({});
   const [needsRefresh, setNeedsRefresh] = useState(false);
 
@@ -81,48 +82,81 @@ export default function Schedule() {
     setEmployees([]);
     router.replace("/");
   };
-  function parseAndSetScheduleData(dataArray: { data: { shifts: TimefoldShift[] } }[]) {
+
+  function parseAndSetScheduleData(
+    roleData: Record<string, { data: { shifts: TimefoldShift[] } }>
+  ) {
     const allShifts: TimefoldShift[] = [];
 
-    dataArray.forEach((data) => {
-      if (data.data.shifts) {
-        allShifts.push(...data.data.shifts);
+    Object.values(roleData[0].data).forEach((roleEntry) => {
+      if ("shifts" in roleEntry && Array.isArray(roleEntry.shifts)) {
+        allShifts.push(...roleEntry.shifts);
       }
     });
-
     if (allShifts.length === 0) {
       return;
     }
-
+    const fullDayMap: Map<number, boolean> = new Map();
     const parsedData = allShifts.map((shift: TimefoldShift) => {
       const employeeName = shift.employee.name;
       const employeeId = getEmployeeIdByName(employeeName);
-      isFullDay.set(parseInt(shift.id), shift.isFullDay);
+      if (shift.isFullDay) {
+        fullDayMap.set(allShifts.indexOf(shift) + 1, true);
+      } else {
+        fullDayMap.set(allShifts.indexOf(shift) + 1, false);
+      }
       return {
-        id: parseInt(shift.id),
+        id: allShifts.indexOf(shift) + 1,
         employeeId,
         startDate: new Date(shift.start),
         finishDate: new Date(shift.end),
         status: "scheduled",
       } as EmployeeAvailability;
     });
-
+    setIsFullDay(fullDayMap);
     setScheduleData(parsedData);
-
+    console.log(parsedData);
     const newCellColors: Record<string, string> = {};
     parsedData.forEach((availability: EmployeeAvailability) => {
+      // Parse start and finish dates
+      const shiftStart = new Date(availability.startDate);
+      const shiftEnd = new Date(availability.finishDate);
+
+      // Check for overlapping availability
+      const overlappingAvailability = availabilityData.find((avail) => {
+        const availStart = new Date(avail.startDate);
+        const availEnd = new Date(avail.finishDate);
+        return (
+          availability.employeeId === avail.employeeId &&
+          ((shiftStart >= availStart && shiftStart < availEnd) ||
+            (shiftEnd > availStart && shiftEnd <= availEnd) ||
+            (shiftStart <= availStart && shiftEnd >= availEnd))
+        );
+      });
+
+      // Set cell color based on overlap and preference
+      let cellColor = "bg-purple-100"; // Default color if no overlap
+
+      if (overlappingAvailability) {
+        if (
+          shiftStart.getTime() === new Date(overlappingAvailability.startDate).getTime() &&
+          shiftEnd.getTime() === new Date(overlappingAvailability.finishDate).getTime()
+        ) {
+          cellColor = "bg-green-300"; // Exact match
+        } else if (overlappingAvailability.status === "preferable") {
+          cellColor = "bg-yellow-300"; // Collision but not exact match
+        } else {
+          cellColor = "bg-red-300"; // Collision
+        }
+      }
+
       const cellKey = `${availability.employeeId}-${formatInTimeZone(
-        new Date(availability.startDate),
+        shiftStart,
         "UTC",
         "yyyy-MM-dd"
       )}`;
-      switch (availability.status) {
-        case "scheduled":
-          isFullDay.get(availability.id)
-            ? (newCellColors[cellKey] = "bg-rose-100")
-            : (newCellColors[cellKey] = "bg-purple-100");
-          break;
-      }
+
+      newCellColors[cellKey] = cellColor;
     });
 
     setCellScheduleColors(newCellColors);
@@ -135,6 +169,7 @@ export default function Schedule() {
       const start = new Date(availability.startDate);
       const finish = new Date(availability.finishDate);
       const hours = (finish.getTime() - start.getTime()) / 3600000; // Convert ms to hours
+      // Logic for switching between months and setting up the totals map
       const currentMonth = start.getMonth() + 1;
       if (prevMonth !== currentMonth) {
         if (!totals.has(currentMonth)) {
@@ -159,6 +194,7 @@ export default function Schedule() {
   const handleRefresh = (value: boolean) => {
     setNeedsRefresh(value);
   };
+  console.log(isFullDay);
   return (
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="schedule" />
@@ -168,13 +204,17 @@ export default function Schedule() {
           employees={employees}
           cellColors={cellScheduleColors}
           setCellColors={setCellScheduleColors}
-          availabilityData={scheduleData}
-          setAvailabilityData={setScheduleData}
+          availabilityData={[]}
+          setAvailabilityData={() => {}}
+          scheduleData={scheduleData}
+          setScheduleData={setScheduleData}
           showSettings={false}
           showTooltips={false}
           roles={[]}
           employeeHours={employeeHours}
           needsRefresh={handleRefresh}
+          isScheduleFullDay={isFullDay}
+          isPlanningFullDay={new Map()}
         />
       </div>
     </>

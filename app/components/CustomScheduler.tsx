@@ -37,11 +37,15 @@ interface CustomSchedulerProps {
   setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   availabilityData: EmployeeAvailability[];
   setAvailabilityData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
+  scheduleData: EmployeeAvailability[];
+  setScheduleData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
   showSettings: boolean;
   showTooltips: boolean;
   roles: string[];
   employeeHours: Record<number, Map<number, number>>;
   needsRefresh: (value: boolean) => void;
+  isScheduleFullDay: Map<number, boolean>;
+  isPlanningFullDay: Map<number, boolean>;
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
@@ -50,11 +54,15 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   setCellColors,
   availabilityData,
   setAvailabilityData,
+  scheduleData,
+  setScheduleData,
   showSettings = true, // Default to true
   showTooltips = true, // Default to true
   roles,
   employeeHours,
   needsRefresh,
+  isScheduleFullDay,
+  isPlanningFullDay,
 }) => {
   const [cellWidth, setCellWidth] = useState(50);
   const [searchTerm, setSearchTerm] = useState("");
@@ -262,7 +270,6 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         setLoading(false);
       });
   };
-
   return (
     <div className="flex-grow bg-white mb-5 ">
       <SchedulerHeader
@@ -302,7 +309,11 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
             setCellColors={setCellColors}
             availabilityData={availabilityData}
             setAvailabilityData={setAvailabilityData}
+            scheduleData={scheduleData}
+            setScheduleData={setScheduleData}
             showTooltips={showTooltips}
+            isScheduleFullDay={isScheduleFullDay}
+            isPlanningFullDay={isPlanningFullDay}
           />
         </div>
       </div>

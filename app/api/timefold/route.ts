@@ -1,16 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
-import {
-  Employee,
-  EmployeeAvailability,
-  Shift,
-  RoleSettings,
-  DailyShiftSettings,
-  User,
-} from "@/app/types/scheduler";
-import { JsonValue } from "@prisma/client/runtime/library";
+import { Employee, EmployeeAvailability, Shift, RoleSettings, User } from "@/app/types/scheduler";
 
 const BACKEND_URL = process.env.BACKEND_URL;
 export const maxDuration = 60;
@@ -52,47 +44,65 @@ export async function POST(req: Request) {
           },
         },
       });
-      // Build the TimeFold JSON
-      const timefoldJson = buildTimefoldJson(employees, shifts, user as User, month);
 
-      // Send POST request to BACKEND_URL/schedules
-      const postResponse = await fetch(`${BACKEND_URL}/schedules`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(timefoldJson),
-      });
+      // Get all roles from user settings
+      const roles = Object.keys(user?.roleSettings || {});
 
-      // Add logging for POST response
-      const postText = await postResponse.text();
-      console.log("POST /schedules response:", postText);
+      const rolePromises = roles.map(async (role) => {
+        // Filter employees by role
+        const roleEmployees = employees.filter((employee) => employee.role === role);
 
-      // Send GET request to BACKEND_URL/scheduler/{jobId}
-      const getResponse = await fetch(`${BACKEND_URL}/schedules/${postText}`);
-      const getText = await getResponse.text();
-      console.log(`GET /schedules/${postText} response:`, getText);
-
-      let statusData: any;
-      try {
-        statusData = JSON.parse(getText);
-      } catch (parseError) {
-        console.error("Error parsing GET response JSON:", parseError);
-        return NextResponse.json(
-          { error: "Invalid status response from scheduler service." },
-          { status: 500 }
+        // Build TimeFold JSON for the role
+        const roleTimefoldJson = buildTimefoldJson(
+          roleEmployees,
+          shifts,
+          user as User,
+          month,
+          role
         );
-      }
 
-      // If solverStatus is NOT_SOLVING, return the status JSON
-      while (statusData.solverStatus !== "NOT_SOLVING") {
-        console.log("Waiting for solver to finish...");
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Send POST request to BACKEND_URL/schedules for the role
+        const postResponse = await fetch(`${BACKEND_URL}/schedules`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(roleTimefoldJson),
+        });
+
+        // Add logging for POST response
+        const postText = await postResponse.text();
+        console.log(`POST /schedules response for role ${role}:`, postText);
+
+        // Send GET request to BACKEND_URL/scheduler/{jobId} for the role
         const getResponse = await fetch(`${BACKEND_URL}/schedules/${postText}`);
         const getText = await getResponse.text();
-        statusData = JSON.parse(getText);
-      }
-      return NextResponse.json(statusData);
+        console.log(`GET /schedules/${postText} response for role ${role}:`, getText);
+
+        let statusData: any;
+        try {
+          statusData = JSON.parse(getText);
+        } catch (parseError) {
+          console.error(`Error parsing GET response JSON for role ${role}:`, parseError);
+          return { [role]: { error: "Invalid status response from scheduler service." } };
+        }
+
+        // If solverStatus is NOT_SOLVING, continue checking
+        while (statusData.solverStatus !== "NOT_SOLVING") {
+          console.log("Waiting for solver to finish...");
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const retryResponse = await fetch(`${BACKEND_URL}/schedules/${postText}`);
+          const retryText = await retryResponse.text();
+          statusData = JSON.parse(retryText);
+        }
+
+        return { [role]: statusData };
+      });
+
+      const roleResponsesArray = await Promise.all(rolePromises);
+      const roleResponses = roleResponsesArray.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+
+      return NextResponse.json(roleResponses);
     } catch (error) {
       console.error("Error generating TimeFold JSON:", error);
       return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -140,41 +150,52 @@ export async function GET(req: Request) {
   }
 }
 
-function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User, month: number) {
-  const timefoldEmployees = employees.map((employee: Employee) => ({
-    name: employee.name,
-    skills: [employee.role],
-    unavailableIntervals: employee.availability
-      ? employee.availability
-          .filter((a: EmployeeAvailability) => a.status === "unreachable")
-          .map((a: EmployeeAvailability) => ({
-            start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-            end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-          }))
-      : [],
-    undesiredIntervals: employee.availability
-      ? employee.availability
-          .filter((a: EmployeeAvailability) => a.status === "unavailable")
-          .map((a: EmployeeAvailability) => ({
-            start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-            end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-          }))
-      : [],
-    desiredIntervals: employee.availability
-      ? employee.availability
-          .filter((a: EmployeeAvailability) => a.status === "preferable")
-          .map((a: EmployeeAvailability) => ({
-            start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-            end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-          }))
-      : [],
-    monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * employee.rate) : 160,
-  }));
+function buildTimefoldJson(
+  employees: Employee[],
+  shifts: Shift[],
+  user: User,
+  month: number,
+  role: string // Added role parameter
+) {
+  const timefoldEmployees = employees
+    .filter(
+      (employee) => employee.role === role && Math.floor(user.monthlyHours * employee.rate) > 0
+    ) // Filter employees by role
+    .map((employee: Employee) => ({
+      name: employee.name,
+      skills: [employee.role],
+      unavailableIntervals: employee.availability
+        ? employee.availability
+            .filter((a: EmployeeAvailability) => a.status === "unreachable")
+            .map((a: EmployeeAvailability) => ({
+              start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+            }))
+        : [],
+      undesiredIntervals: employee.availability
+        ? employee.availability
+            .filter((a: EmployeeAvailability) => a.status === "unavailable")
+            .map((a: EmployeeAvailability) => ({
+              start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+            }))
+        : [],
+      desiredIntervals: employee.availability
+        ? employee.availability
+            .filter((a: EmployeeAvailability) => a.status === "preferable")
+            .map((a: EmployeeAvailability) => ({
+              start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+            }))
+        : [],
+      monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * employee.rate) : 160,
+    }));
 
   const timefoldShifts = generateMonthlyShifts(
     user.roleSettings as unknown as RoleSettings,
     shifts,
-    month
+    month,
+    role // Pass role to generateMonthlyShifts
   );
 
   return {
@@ -183,7 +204,12 @@ function buildTimefoldJson(employees: Employee[], shifts: Shift[], user: User, m
   };
 }
 
-function generateMonthlyShifts(roleSettings: RoleSettings, shifts: Shift[], month: number) {
+function generateMonthlyShifts(
+  roleSettings: RoleSettings,
+  shifts: Shift[],
+  month: number,
+  role: string // Added role parameter
+) {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -205,8 +231,11 @@ function generateMonthlyShifts(roleSettings: RoleSettings, shifts: Shift[], mont
     ];
 
     shifts.forEach((shift) => {
-      if (shift.days.includes(dayName)) {
-        shift.role.forEach((role) => {
+      if (shift.days.includes(dayName) && shift.role.includes(role)) {
+        // Filter shifts by role
+        shift.role.forEach((shiftRole) => {
+          if (shiftRole !== role) return; // Only process the current role
+
           const shiftString = shift.isFullDay
             ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)})`
             : `${shift.startTime.slice(0, -3)}-${shift.endTime.slice(0, -3)}`;

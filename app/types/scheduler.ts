@@ -43,7 +43,6 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   monthlyHours: number;
-  dailyShiftSettings: DailyShiftSettings;
   roleSettings: RoleSettings;
 }
 
@@ -59,16 +58,6 @@ export interface RoleSettings {
       Sunday?: number;
     };
   };
-}
-
-export interface DailyShiftSettings {
-  Monday?: number;
-  Tuesday?: number;
-  Wednesday?: number;
-  Thursday?: number;
-  Friday?: number;
-  Saturday?: number;
-  Sunday?: number;
 }
 
 export interface Schedule {

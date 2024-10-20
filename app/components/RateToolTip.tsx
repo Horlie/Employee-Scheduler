@@ -21,7 +21,7 @@ const RateToolTip: React.FC<RateToolTipProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (/^\d*\.?\d?$/.test(value)) {
+    if (/^\d*\.?\d{0,2}$/.test(value)) {
       // Allow only one decimal place
       setRate(value);
       setError("");

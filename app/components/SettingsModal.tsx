@@ -386,12 +386,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                               <label className="my-1 text-sm">{day}</label>
                               <input
                                 type="number"
+                                min="0"
+                                max="10"
                                 className="w-20 p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 text-center rounded-md"
-                                value={
-                                  roleSettings[role]?.[shift]?.[
-                                    day as keyof (typeof roleSettings)[typeof role][typeof shift]
-                                  ] ?? 0
-                                }
+                                value={Math.min(
+                                  10,
+                                  Math.max(
+                                    0,
+                                    roleSettings[role]?.[shift]?.[
+                                      day as keyof (typeof roleSettings)[typeof role][typeof shift]
+                                    ] ?? 0
+                                  )
+                                )}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value) || 0;
                                   setRoleSettings((prev) => ({

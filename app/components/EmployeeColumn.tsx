@@ -119,7 +119,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
             {employees.map((employee) => (
               <div
                 key={employee.id}
-                className={`flex items-center p-2 border-l border-b border-r border-gray-300 h-[46px]
+                className={`flex items-center p-2 border-l border-b border-r border-gray-300 h-[50px]
                   ${hoveredEmployee === employee.id.toString() ? "bg-lightblue z-[49]" : ""}`}
                 style={{
                   boxShadow:
@@ -132,12 +132,12 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                   className="w-8 h-8 rounded-full border border-gray-500 flex items-center justify-center mr-2 cursor-pointer hover:text-indigo-600 hover:border-indigo-600"
                   onClick={(e) => handleRateClick(employee.id.toString(), employee.rate, e)}
                 >
-                  {employee.rate.toFixed(1)}
+                  {employee.rate.toFixed(2)}
                 </div>
 
                 <div className="flex flex-col">
                   <div className="font-semibold text-sm">
-                    {employee.name}
+                    {employee.name.split(" ").slice(0, 2).join(" ")}
                     {/* Display total hours */}
                     {!showTooltips && (
                       <span className="text-xs text-gray-500 block">

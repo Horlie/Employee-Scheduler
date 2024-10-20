@@ -21,6 +21,7 @@ export default function Planning() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFullDay, setIsFullDay] = useState<Map<number, boolean>>(new Map());
 
   const router = useRouter();
 
@@ -99,6 +100,23 @@ export default function Planning() {
     return Array.from(roleSet);
   }, [employees]);
 
+  useEffect(() => {
+    const newIsFullDay = new Map<number, boolean>();
+    availabilityData.forEach((availability) => {
+      const startDate = new Date(availability.startDate);
+      const finishDate = new Date(availability.finishDate);
+      if (
+        startDate.getHours() === 0 &&
+        startDate.getMinutes() === 0 &&
+        finishDate.getHours() === 23 &&
+        finishDate.getMinutes() === 59
+      ) {
+        newIsFullDay.set(availability.id, true);
+      }
+    });
+    setIsFullDay(newIsFullDay);
+  }, [availabilityData]);
+  console.log(isFullDay);
   return (
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="planning" />
@@ -110,11 +128,15 @@ export default function Planning() {
           setCellColors={setCellColors}
           availabilityData={availabilityData}
           setAvailabilityData={setAvailabilityData}
+          scheduleData={[]}
+          setScheduleData={() => {}}
           showSettings={true} // Ensure settings are shown
           showTooltips={true} // Ensure tooltips are enabled
           roles={roles}
           employeeHours={{}}
           needsRefresh={() => {}}
+          isPlanningFullDay={isFullDay}
+          isScheduleFullDay={new Map()}
         />
       </div>
     </>

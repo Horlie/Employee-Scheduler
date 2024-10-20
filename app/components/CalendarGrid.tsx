@@ -21,7 +21,11 @@ interface CalendarGridProps {
   setCellColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   availabilityData: EmployeeAvailability[];
   setAvailabilityData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
+  scheduleData: EmployeeAvailability[];
+  setScheduleData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
   showTooltips: boolean;
+  isScheduleFullDay: Map<number, boolean>;
+  isPlanningFullDay: Map<number, boolean>;
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -41,7 +45,11 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   setCellColors,
   availabilityData,
   setAvailabilityData,
+  scheduleData,
+  setScheduleData,
   showTooltips,
+  isScheduleFullDay,
+  isPlanningFullDay,
 }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -318,9 +326,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       ))}
     </div>
   );
-
   const renderAvailabilityTile = (employee: Employee, day: Date) => {
     const cellKey = `${employee.id}-${fromZonedTime(day, "UTC").toISOString().split("T")[0]}`;
+
     const cellColor =
       cellColors[cellKey] ||
       `${
@@ -330,6 +338,11 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       }`;
 
     const availability = availabilityData.find(
+      (a: EmployeeAvailability) =>
+        a.employeeId === Number(employee.id) &&
+        new Date(a.startDate).toDateString() === day.toDateString()
+    );
+    const schedule = scheduleData.find(
       (a: EmployeeAvailability) =>
         a.employeeId === Number(employee.id) &&
         new Date(a.startDate).toDateString() === day.toDateString()
@@ -345,7 +358,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         }`}
         style={{
           width: `${cellWidth}px`,
-          height: "46px",
+          height: "50px",
           boxShadow: isHovered ? "0 0 12px 1px lightblue" : "none",
         }}
         onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), employee.role)}
@@ -354,15 +367,25 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       >
         {availability && (
           <div className="w-full h-full flex items-center justify-center text-xs px-1">
-            {new Date(availability.startDate).getHours() === 0 &&
-            new Date(availability.startDate).getMinutes() === 0 &&
-            new Date(availability.finishDate).getHours() === 23 &&
-            new Date(availability.finishDate).getMinutes() === 59 ? (
+            {isPlanningFullDay?.get(availability.id) ? (
               <span className="text-gray-600 font-medium">All Day</span>
             ) : (
               <span className="text-gray-700 text-center">
                 {`${formatTime(new Date(availability.startDate))} ${formatTime(
                   new Date(availability.finishDate)
+                )}`}
+              </span>
+            )}
+          </div>
+        )}
+        {schedule && (
+          <div className="w-full h-full flex items-center justify-center text-xs px-1">
+            {isScheduleFullDay?.get(schedule.id) ? (
+              <span className="text-gray-600 font-medium">All Day</span>
+            ) : (
+              <span className="text-gray-700 text-center">
+                {`${formatTime(new Date(schedule.startDate))} ${formatTime(
+                  new Date(schedule.finishDate)
                 )}`}
               </span>
             )}
