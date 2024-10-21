@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import LoadingSpinner from "./LoadingSpinner";
 
@@ -17,7 +17,6 @@ const inactivePageCss =
 
 const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePage }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const loadingRef = useRef(false);
 
   const handleNavigation = () => {};
 
@@ -26,13 +25,13 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePag
   return (
     <>
       {isLoading && <LoadingSpinner />}
-      <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 w-full">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
+      <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 w-full pl-14">
+        <div className="w-full">
           <div className="flex justify-between items-center h-16">
             <div className="flex-shrink-0 flex items-center">
               <span className="text-2xl font-semibold text-gray-800">EMPLOYEE SCHEDULER</span>
             </div>
-            <div className="hidden sm:flex sm:space-x-8">
+            <div className="flex space-x-8">
               <Link
                 onClick={() => handleNavigation()}
                 className={activePage === "schedule" ? activePageCss : inactivePageCss}
@@ -48,7 +47,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePag
                 Planning
               </Link>
             </div>
-            <div className="hidden sm:flex sm:items-center">
+            <div className="flex items-center pr-12">
               <button
                 onClick={onLogout}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"

@@ -116,12 +116,11 @@ export default function Planning() {
     });
     setIsFullDay(newIsFullDay);
   }, [availabilityData]);
-  console.log(isFullDay);
   return (
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="planning" />
       {isLoading && <LoadingSpinner />}
-      <div className="flex-grow overflow-y-auto rounded-2xl border-2 border-gray-300 mt-16 bg-gray-100 overflow-x-auto">
+      <div className="overflow-y-auto rounded-2xl border-2 border-gray-300 mt-16 bg-gray-100 overflow-x-auto">
         <CustomScheduler
           employees={employees}
           cellColors={cellColors}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface SchedulerHeaderProps {
   currentDate: Date;
@@ -6,9 +6,9 @@ interface SchedulerHeaderProps {
   onNextMonth: () => void;
   onToday: () => void;
   onSettingsClick: () => void;
-  onSolveClick: () => void; // Ensure this prop is defined
+  onSolveClick: () => void;
   showSettings: boolean;
-  loading: boolean; // If using loading state
+  loading: boolean;
 }
 
 const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({

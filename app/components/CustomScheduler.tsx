@@ -107,19 +107,25 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     const updateCellWidth = () => {
       if (gridRef.current) {
         const containerWidth = gridRef.current.offsetWidth;
-        const employeeColumnWidth = 192; // 48px * 4
+        const employeeColumnWidth = 200;
         const weekDividersWidth = Math.ceil(days.length / 7) * 24;
         const availableWidth = containerWidth - employeeColumnWidth - weekDividersWidth;
         const newCellWidth = Math.max(Math.floor(availableWidth / days.length), 50); // Set a minimum width
         setCellWidth(newCellWidth);
+        console.log("availableWidth:", availableWidth);
+        console.log("newCellWidth:", newCellWidth);
       }
     };
 
     updateCellWidth();
 
     window.addEventListener("resize", updateCellWidth);
-    return () => window.removeEventListener("resize", updateCellWidth);
-  }, [days.length, activeMonth]); // Add activeMonth as a dependency if needed
+    window.addEventListener("load", updateCellWidth);
+    return () => {
+      window.removeEventListener("resize", updateCellWidth);
+      window.removeEventListener("load", updateCellWidth);
+    };
+  }, [days.length, gridRef]);
 
   // Helper functions
   const handlePrevMonth = () => {
@@ -282,8 +288,8 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         showSettings={showSettings}
         loading={loading}
       />
-      <div className="flex justify-center bg-gray-100">
-        <div className="flex max-w-full" ref={gridRef}>
+      <div className="flex justify-center bg-gray-100 overflow-x-auto" ref={gridRef}>
+        <div className="flex overflow-x-auto">
           <EmployeeColumn
             groupedEmployees={groupedEmployees}
             renderGroupSeparator={renderGroupSeparator}

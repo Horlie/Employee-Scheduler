@@ -115,7 +115,6 @@ export default function Schedule() {
     });
     setIsFullDay(fullDayMap);
     setScheduleData(parsedData);
-    console.log(parsedData);
     const newCellColors: Record<string, string> = {};
     parsedData.forEach((availability: EmployeeAvailability) => {
       // Parse start and finish dates
@@ -194,7 +193,6 @@ export default function Schedule() {
   const handleRefresh = (value: boolean) => {
     setNeedsRefresh(value);
   };
-  console.log(isFullDay);
   return (
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="schedule" />
