@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
       const rolePromises = roles.map(async (role) => {
         // Filter employees by role
-        const roleEmployees = employees.filter((employee) => employee.role === role);
+        const roleEmployees = employees.filter((employee: Employee) => employee.role === role);
 
         // Build TimeFold JSON for the role
         const roleTimefoldJson = buildTimefoldJson(
