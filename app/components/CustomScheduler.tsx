@@ -209,7 +209,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
       return;
     }
 
-    const currentMonth = currentDate.getMonth();
+    const currentMonth = currentDate.getMonth() + 1;
 
     console.log(
       `Sending request to /api/timefold with employeeId: ${employeeId}, month: ${currentMonth}`
