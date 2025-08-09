@@ -209,10 +209,11 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
       return;
     }
 
-    const currentMonth = currentDate.getMonth();
+    const monthForTimefold = currentDate.getMonth(); 
+    const monthForDatabase = currentDate.getMonth() + 1;;
 
     console.log(
-      `Sending request to /api/timefold with employeeId: ${employeeId}, month: ${currentMonth}`
+      `Sending request to /api/timefold with employeeId: ${employeeId}, month: ${monthForTimefold}`
     );
 
     // Make POST request using fetch
@@ -223,7 +224,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
       },
       body: JSON.stringify({
         employeeId: Number(employeeId),
-        month: currentMonth,
+        month: monthForTimefold, 
       }),
     })
       .then(async (response) => {
@@ -247,7 +248,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
           },
           body: JSON.stringify({
             employeeId: Number(employeeId),
-            month: currentMonth,
+            month: monthForDatabase,
             data: data,
           }),
         });
