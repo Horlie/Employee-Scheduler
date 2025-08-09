@@ -1,56 +1,96 @@
-# Thesis Project
+# 🏥 Employee Scheduler for Hospitals
 
-This repository contains the implementation of my thesis work, built using [Next.js](https://nextjs.org/).
+This project is a **hospital employee shift scheduling system** that intelligently generates optimal shift timetables based on staff availability and preferences. It was developed as part of a **Bachelor's thesis** in computer science, focusing on **AI-driven workforce planning** using [Timefold](https://timefold.ai/) and modern web technologies.
 
-## Project Overview
+## 📚 Thesis Title
 
-[Add a brief description of your thesis topic and objectives here]
+**Employee Scheduler for Hospitals**  
+Bachelor's Thesis  
+_Supervised by: Vladmir Viies  
+_University: TalTech
 
-## Technical Stack
+---
 
-This project is built using:
-- Next.js - A React framework for production
-- [Add other major technologies/frameworks used]
+## 🚀 Project Overview
 
-## Getting Started
+Hospital scheduling is a complex constraint satisfaction problem. This application provides a user-friendly interface for hospital staff to input their **availability and preferences**, and uses **Timefold**, an AI constraint solver, to generate an **optimized shift schedule**.
 
-First, run the development server:
+### Key Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Staff can select:
+  - ✅ Prefer to work
+  - ❌ Cannot work
+  - ⚠️ Wouldn't like to work
+- Real-time schedule generation with hard and soft constraint logic
+- Built with **Next.js**, **TypeScript**, and **Timefold on Quarkus**
+- Deployed using **Docker** (via **Render** platform)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-## Project Structure
+## 🧠 Technologies Used
 
-[Add a brief description of your project's structure and organization]
+| Component        | Technology            |
+|------------------|------------------------|
+| Frontend         | Next.js, TypeScript    |
+| Backend          | Quarkus, Java, Timefold |
+| Constraint Solver| Timefold AI Solver     |
+| Deployment       | Docker, Render         |
+| Database | PostgreSQL  |
 
-## Features
+---
 
-[Add key features or components of your thesis implementation]
 
-## Development
+## ⚙️ How It Works
 
-The project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+1. **Staff select their shift preferences** in the user interface:
+   - ✅ Prefer to work
+   - ❌ Cannot work
+   - ⚠️ Wouldn't like to work
 
-## Learn More
+2. **Frontend sends the data** to the backend via a REST API.
 
-To learn more about the technologies used in this project:
+3. The backend **transforms the input into a Timefold planning problem**, where:
+   - **Hard constraints** (e.g., "Cannot work") must always be satisfied.
+   - **Soft constraints** (e.g., "Wouldn't like to work") are respected where possible to improve fairness and satisfaction.
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Learn Next.js](https://nextjs.org/learn)
+4. **Timefold solves the schedule** using AI optimization techniques.
 
-## Deployment
+5. **Frontend displays the generated schedule**, allowing hospital administrators to review or export the results.
 
-The easiest way to deploy this Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
+---
 
-## Contact
+## 📖 Thesis Structure
 
-[Add your contact information or academic details here]
+- **Problem Description**  
+  Explains the challenges of manual hospital scheduling and the motivation for an automated solution.
+
+- **Related Work**  
+  Overview of classical scheduling methods and modern AI-driven techniques.
+
+- **Implementation**  
+  Details the full-stack architecture (frontend, backend, solver), how constraints are modeled, and how the solution is calculated.
+
+- **Optimization Strategies**  
+  Discussion of scoring functions, solver configuration, and constraint weights (e.g., hard vs. soft constraints).
+
+- **Evaluation**  
+  Benchmarks and testing results comparing the system-generated schedule against manual ones.
+
+
+
+---
+
+## ✅ Status
+
+- ✅ Functional prototype complete
+- 📚 Bachelor thesis submitted
+
+
+---
+
+## 👤 Author
+
+**Kirill Morenko**  
+📧 kimore@taltech.ee 
+🎓 TalTech
+
