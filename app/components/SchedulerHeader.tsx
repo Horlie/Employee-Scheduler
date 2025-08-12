@@ -9,6 +9,9 @@ interface SchedulerHeaderProps {
   onSolveClick: () => void;
   showSettings: boolean;
   loading: boolean;
+
+  onDownloadClick: () => void;
+  isDownloading: boolean;
 }
 
 const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
@@ -20,6 +23,9 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
   onSolveClick,
   showSettings,
   loading,
+
+  onDownloadClick,
+  isDownloading,
 }) => {
   return (
     <div
@@ -78,6 +84,15 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
               >
                 {loading ? "Solving..." : "Solve"}
               </button>
+
+              <button
+                onClick={onDownloadClick}
+                disabled={loading || isDownloading} 
+                className="px-4 py-2 font-semibold bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {isDownloading ? "Creating PDF..." : "Download as PDF"}
+              </button>
+
             </>
           )}
         </div>
