@@ -72,6 +72,9 @@ export default function Planning() {
             case "preferable":
               newCellColors[cellKey] = "bg-green-200";
               break;
+            case "vacation":
+              newCellColors[cellKey] = "bg-blue-200"; 
+              break;
           }
         });
 
