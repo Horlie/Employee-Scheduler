@@ -347,6 +347,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     <input
                       id="monthlyHours"
                       type="number"
+                      min="0"
+                      max="170"
                       className="p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 text-center rounded-md"
                       placeholder={initialMonthlyHours.toString()}
                       value={monthlyHours}
@@ -433,6 +435,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       <input
                         id="shiftStart"
                         type="time"
+                        
                         required
                         className={`p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500`}
                         value={startTime}

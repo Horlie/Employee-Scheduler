@@ -9,6 +9,9 @@ import SettingsModal from "./SettingsModal";
 import LoadingSpinner from "./LoadingSpinner";
 import { useEmployee } from "../context/EmployeeContext";
 
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
 // Add this function near the top of the file, after imports
 function isLatvianHoliday(date: Date): boolean {
   const month = date.getMonth();
@@ -72,6 +75,8 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Add activeMonth from EmployeeContext
   const { activeMonth, setActiveMonth } = useEmployee();
@@ -82,6 +87,36 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     setCurrentDate(activeMonth);
   }, [activeMonth]);
 
+  const handleDownloadPDF = () => {
+    const scheduleElement = document.getElementById("scheduler-grid-to-download");
+
+    if (scheduleElement) {
+      setIsDownloading(true);
+      html2canvas(scheduleElement, { scale: 2, useCORS: true }).then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({
+          orientation: "landscape",
+          unit: "mm",
+          format: "a4",
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+
+        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+        const imgX = (pdfWidth - imgWidth * ratio) / 2;
+        const imgY = 10;
+
+        pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+        pdf.save("schedule.pdf");
+        setIsDownloading(false);
+      });
+    } else {
+      console.error("He can't find element with id 'scheduler-grid-to-download'");
+    }
+  };
   const days = generateMonthDays(currentDate);
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -288,42 +323,48 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         onSolveClick={handleSolveClick}
         showSettings={showSettings}
         loading={loading}
+
+        onDownloadClick={handleDownloadPDF}
+        isDownloading={isDownloading}
       />
-      <div className="flex justify-center bg-gray-100 overflow-x-auto" ref={gridRef}>
-        <div className="flex overflow-x-auto">
-          <EmployeeColumn
-            groupedEmployees={groupedEmployees}
-            renderGroupSeparator={renderGroupSeparator}
-            renderSearchBar={renderSearchBar}
-            hoveredEmployee={hoveredEmployee}
-            showTooltips={showTooltips}
-            employeeHours={employeeHours} // Pass the prop
-          />
-          <CalendarGrid
-            groupedEmployees={groupedEmployees}
-            days={days}
-            daysOfWeek={daysOfWeek}
-            cellWidth={cellWidth}
-            isToday={isToday}
-            isLatvianHoliday={isLatvianHoliday}
-            hoveredDay={hoveredDay}
-            hoveredEmployee={hoveredEmployee}
-            hoveredGroup={hoveredGroup}
-            handleCellHover={handleCellHover}
-            handleCellLeave={handleCellLeave}
-            renderGroupSeparator={renderGroupSeparator}
-            cellColors={cellColors}
-            setCellColors={setCellColors}
-            availabilityData={availabilityData}
-            setAvailabilityData={setAvailabilityData}
-            scheduleData={scheduleData}
-            setScheduleData={setScheduleData}
-            showTooltips={showTooltips}
-            isScheduleFullDay={isScheduleFullDay}
-            isPlanningFullDay={isPlanningFullDay}
-          />
+      <div id="scheduler-grid-to-download">
+        <div className="flex justify-center bg-gray-100 overflow-x-auto" ref={gridRef}>
+          <div className="flex overflow-x-auto">
+            <EmployeeColumn
+              groupedEmployees={groupedEmployees}
+              renderGroupSeparator={renderGroupSeparator}
+              renderSearchBar={renderSearchBar}
+              hoveredEmployee={hoveredEmployee}
+              showTooltips={showTooltips}
+              employeeHours={employeeHours} // Pass the prop
+            />
+            <CalendarGrid
+              groupedEmployees={groupedEmployees}
+              days={days}
+              daysOfWeek={daysOfWeek}
+              cellWidth={cellWidth}
+              isToday={isToday}
+              isLatvianHoliday={isLatvianHoliday}
+              hoveredDay={hoveredDay}
+              hoveredEmployee={hoveredEmployee}
+              hoveredGroup={hoveredGroup}
+              handleCellHover={handleCellHover}
+              handleCellLeave={handleCellLeave}
+              renderGroupSeparator={renderGroupSeparator}
+              cellColors={cellColors}
+              setCellColors={setCellColors}
+              availabilityData={availabilityData}
+              setAvailabilityData={setAvailabilityData}
+              scheduleData={scheduleData}
+              setScheduleData={setScheduleData}
+              showTooltips={showTooltips}
+              isScheduleFullDay={isScheduleFullDay}
+              isPlanningFullDay={isPlanningFullDay}
+            />
+          </div>
         </div>
       </div>
+      
       {loading && <LoadingSpinner />}
       <SettingsModal isOpen={isSettingsModalOpen} onClose={handleSettingsClose} roles={roles} />
     </div>

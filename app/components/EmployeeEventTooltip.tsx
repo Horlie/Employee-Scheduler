@@ -5,10 +5,10 @@ interface EmployeeEventTooltipProps {
   employee: Employee;
   date: Date;
   onAction: (
-    action: "unavailable" | "unreachable" | "preferable" | "delete",
+    action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
     startDate: Date,
     finishDate: Date
-  ) => void;
+  ) => void; 
   position: { top: number; left: number };
 }
 
@@ -22,7 +22,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
 
-  const handleAction = (action: "unavailable" | "unreachable" | "preferable" | "delete") => {
+  const handleAction = (action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation") => {
     const startDate = new Date(date);
     const finishDate = new Date(date);
     if (isFullDay) {
@@ -101,6 +101,12 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
           onClick={() => handleAction("delete")}
         >
           Delete
+        </button>
+        <button
+          className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-sm"
+          onClick={() => handleAction("vacation")}
+        >
+          Vacation
         </button>
       </div>
     </div>
