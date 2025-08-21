@@ -9,8 +9,7 @@ import SettingsModal from "./SettingsModal";
 import LoadingSpinner from "./LoadingSpinner";
 import { useEmployee } from "../context/EmployeeContext";
 
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import { generateSchedulePDF } from "./SchedulePDFGenerator";
 
 // Add this function near the top of the file, after imports
 function isLatvianHoliday(date: Date): boolean {
@@ -76,6 +75,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   
+  
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Add activeMonth from EmployeeContext
@@ -88,35 +88,13 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   }, [activeMonth]);
 
   const handleDownloadPDF = () => {
-    const scheduleElement = document.getElementById("scheduler-grid-to-download");
-
-    if (scheduleElement) {
-      setIsDownloading(true);
-      html2canvas(scheduleElement, { scale: 2, useCORS: true }).then((canvas) => {
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF({
-          orientation: "landscape",
-          unit: "mm",
-          format: "a4",
-        });
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-
-        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-        const imgX = (pdfWidth - imgWidth * ratio) / 2;
-        const imgY = 10;
-
-        pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-        pdf.save("schedule.pdf");
+    setIsDownloading(true);
+    generateSchedulePDF("scheduler-grid-to-download")
+      .finally(() => {
         setIsDownloading(false);
       });
-    } else {
-      console.error("He can't find element with id 'scheduler-grid-to-download'");
-    }
   };
+  
   const days = generateMonthDays(currentDate);
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
