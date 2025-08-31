@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import { Employee, EmployeeAvailability, TimefoldShift } from "../types/scheduler";
 import { formatInTimeZone } from "date-fns-tz";
+
 export default function Schedule() {
   const {
     employees,
@@ -26,18 +27,14 @@ export default function Schedule() {
   const [isFullDay, setIsFullDay] = useState<Map<number, boolean>>(new Map());
   const [employeeHours, setEmployeeHours] = useState<Record<number, Map<number, number>>>({});
   const [needsRefresh, setNeedsRefresh] = useState(false);
-
   const router = useRouter();
 
-  // Move fetchScheduleData outside the initial useEffect
   const fetchScheduleData = async () => {
     try {
       const parsedUser = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = parsedUser.id;
-      // Fetch data with userId and month as search parameters
       const response = await fetch(`/api/timefold?userId=${userId}`);
       const data = await response.json();
-      // Parse the fetched data
       parseAndSetScheduleData(data);
     } catch (error) {
       console.error("Error fetching schedule data:", error);
@@ -54,23 +51,56 @@ export default function Schedule() {
 
     if (user) {
       setIsLoggedIn(true);
-      setIsLoading(true); // Ensure loading state is set
-      fetchScheduleData(); // Call the moved fetchScheduleData
+      setIsLoading(true);
+      fetchScheduleData();
     } else {
-      setIsLoading(false); // Stop loading if not logged in
+      setIsLoading(false);
     }
-  }, [employees, router]); // Added dependencies if necessary
+  }, [employees, router]);
 
-  // Add this useEffect to listen for needsRefresh changes
   useEffect(() => {
     if (needsRefresh) {
-      setIsLoading(true); // Optional: Show loading spinner during refresh
+      setIsLoading(true);
       fetchScheduleData();
       setNeedsRefresh(false);
     }
   }, [needsRefresh]);
 
-  // Function to get employee ID by name from localStorage
+  const handleSaveChanges = async () => {
+    setIsLoading(true);
+    try {
+      const validSchedule = scheduleData.filter(s => typeof s.id === "number" && s.id > 0);
+      const normalizedSchedule = scheduleData.map(s => ({
+        ...s,
+        startDate: typeof s.startDate === "string" ? s.startDate : s.startDate.toISOString(),
+        finishDate: typeof s.finishDate === "string" ? s.finishDate : s.finishDate.toISOString(),
+        start: typeof s.start === "string" ? s.start : s.start?.toISOString?.(),
+        end: typeof s.end === "string" ? s.end : s.end?.toISOString?.(),
+      }));
+      const response = await fetch('/api/update-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schedule: normalizedSchedule,
+          userId: JSON.parse(localStorage.getItem("user") || "{}").id,
+          month: activeMonth.getMonth() + 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save changes to the server.');
+      }
+      
+      console.log("Saving scheduleData:", normalizedSchedule);
+
+    } catch (error) {
+      console.error(error);
+      alert('Error saving changes.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getEmployeeIdByName = (name: string) => {
     const employee = employees.find((emp: Employee) => emp.name === name);
     return employee ? employee.id : null;
@@ -87,41 +117,52 @@ export default function Schedule() {
     roleData: Record<string, { data: { shifts: TimefoldShift[] } }>
   ) {
     const allShifts: TimefoldShift[] = [];
-
+    
     Object.values(roleData[0].data).forEach((roleEntry) => {
       if ("shifts" in roleEntry && Array.isArray(roleEntry.shifts)) {
         allShifts.push(...roleEntry.shifts);
       }
     });
+
     if (allShifts.length === 0) {
       return;
     }
+
     const fullDayMap: Map<number, boolean> = new Map();
     const parsedData = allShifts.map((shift: TimefoldShift) => {
       const employeeName = shift.employee.name;
+      const employee = employees.find(e => e.name === employeeName);
       const employeeId = getEmployeeIdByName(employeeName);
+      
       if (shift.isFullDay) {
-        fullDayMap.set(allShifts.indexOf(shift) + 1, true);
+        fullDayMap.set(parseInt(shift.id, 10), true);
       } else {
-        fullDayMap.set(allShifts.indexOf(shift) + 1, false);
+        fullDayMap.set(parseInt(shift.id, 10), false);
       }
+      
       return {
-        id: allShifts.indexOf(shift) + 1,
+        id: parseInt(shift.id, 10),
         employeeId,
+        start: new Date(shift.start),
+        end: new Date(shift.end),
         startDate: new Date(shift.start),
         finishDate: new Date(shift.end),
         status: "scheduled",
+        employee: {
+            name: employeeName,
+            role: employee?.role,
+        }
       } as EmployeeAvailability;
     });
+
     setIsFullDay(fullDayMap);
     setScheduleData(parsedData);
+
     const newCellColors: Record<string, string> = {};
     parsedData.forEach((availability: EmployeeAvailability) => {
-      // Parse start and finish dates
       const shiftStart = new Date(availability.startDate);
       const shiftEnd = new Date(availability.finishDate);
 
-      // Check for overlapping availability
       const overlappingAvailability = availabilityData.find((avail) => {
         const availStart = new Date(avail.startDate);
         const availEnd = new Date(avail.finishDate);
@@ -133,19 +174,17 @@ export default function Schedule() {
         );
       });
 
-      // Set cell color based on overlap and preference
-      let cellColor = "bg-purple-100"; // Default color if no overlap
-
+      let cellColor = "bg-purple-100";
       if (overlappingAvailability) {
         if (
           shiftStart.getTime() === new Date(overlappingAvailability.startDate).getTime() &&
           shiftEnd.getTime() === new Date(overlappingAvailability.finishDate).getTime()
         ) {
-          cellColor = "bg-green-300"; // Exact match
+          cellColor = "bg-green-300";
         } else if (overlappingAvailability.status === "preferable") {
-          cellColor = "bg-yellow-300"; // Collision but not exact match
+          cellColor = "bg-yellow-300";
         } else {
-          cellColor = "bg-red-300"; // Collision
+          cellColor = "bg-red-300";
         }
       }
 
@@ -154,27 +193,20 @@ export default function Schedule() {
         "UTC",
         "yyyy-MM-dd"
       )}`;
-
       newCellColors[cellKey] = cellColor;
     });
 
     setCellScheduleColors(newCellColors);
 
-    // Calculate total hours for each employee
     const totals: Map<number, Map<number, number>> = new Map();
-    let prevMonth: number | null = null;
-
     parsedData.forEach((availability: EmployeeAvailability) => {
       const start = new Date(availability.startDate);
       const finish = new Date(availability.finishDate);
-      const hours = (finish.getTime() - start.getTime()) / 3600000; // Convert ms to hours
-      // Logic for switching between months and setting up the totals map
+      const hours = (finish.getTime() - start.getTime()) / 3600000;
       const currentMonth = start.getMonth() + 1;
-      if (prevMonth !== currentMonth) {
-        if (!totals.has(currentMonth)) {
-          totals.set(currentMonth, new Map());
-        }
-        prevMonth = currentMonth;
+
+      if (!totals.has(currentMonth)) {
+        totals.set(currentMonth, new Map());
       }
 
       const monthTotals = totals.get(currentMonth)!;
@@ -189,10 +221,13 @@ export default function Schedule() {
       employeeHoursObj[key] = value;
     });
     setEmployeeHours(employeeHoursObj);
+    return parsedData;
   }
+
   const handleRefresh = (value: boolean) => {
     setNeedsRefresh(value);
   };
+
   return (
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="schedule" />
@@ -213,6 +248,7 @@ export default function Schedule() {
           needsRefresh={handleRefresh}
           isScheduleFullDay={isFullDay}
           isPlanningFullDay={new Map()}
+          onSaveChanges={handleSaveChanges}
         />
       </div>
     </>
