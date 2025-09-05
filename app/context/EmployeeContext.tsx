@@ -16,6 +16,9 @@ interface EmployeeContextType {
   setScheduleData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
   activeMonth: Date;
   setActiveMonth: (date: Date) => void;
+
+  handleSaveChanges: () => void;
+  setHandleSaveChanges: React.Dispatch<React.SetStateAction<() => void>>;
 }
 
 const EmployeeContext = createContext<EmployeeContextType | undefined>(undefined);
@@ -27,6 +30,8 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   const [cellScheduleColors, setCellScheduleColors] = useState<Record<string, string>>({});
   const [scheduleData, setScheduleData] = useState<EmployeeAvailability[]>([]);
   const [activeMonth, setActiveMonth] = useState(new Date());
+  const [handleSaveChanges, setHandleSaveChanges] = useState<() => void>(() => () => {});
+
 
   return (
     <EmployeeContext.Provider
@@ -43,6 +48,8 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
         setScheduleData,
         activeMonth,
         setActiveMonth,
+        handleSaveChanges,
+        setHandleSaveChanges,
       }}
     >
       {children}

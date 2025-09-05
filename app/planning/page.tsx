@@ -17,6 +17,7 @@ export default function Planning() {
     setCellColors,
     availabilityData,
     setAvailabilityData,
+    handleSaveChanges,
   } = useEmployee();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -139,6 +140,7 @@ export default function Planning() {
           needsRefresh={() => {}}
           isPlanningFullDay={isFullDay}
           isScheduleFullDay={new Map()}
+          onSaveChanges={handleSaveChanges}
         />
       </div>
     </>

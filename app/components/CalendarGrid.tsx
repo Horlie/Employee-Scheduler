@@ -4,6 +4,9 @@ import { getWeek, format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
 
+import { DndContext, DragEndEvent, useDroppable } from '@dnd-kit/core';
+import { DraggableShift } from './DraggableShift';
+
 interface CalendarGridProps {
   groupedEmployees: [string, Employee[]][];
   days: Date[];
@@ -27,6 +30,13 @@ interface CalendarGridProps {
   isScheduleFullDay: Map<number, boolean>;
   isPlanningFullDay: Map<number, boolean>;
 }
+const DroppableCell: React.FC<{ employee: Employee; day: Date; children: React.ReactNode }> = ({ employee, day, children }) => {
+  const { setNodeRef } = useDroppable({
+    id: `cell-${employee.id}-${day.toISOString().split('T')[0]}`,
+    data: { employeeId: employee.id, date: day, role: employee.role }, 
+  });
+  return <div ref={setNodeRef} className="w-full h-full">{children}</div>;
+};
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
   groupedEmployees,
@@ -50,6 +60,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   showTooltips,
   isScheduleFullDay,
   isPlanningFullDay,
+
+  
 }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -221,6 +233,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             const newAvailability: EmployeeAvailability = {
               id: Date.now(), // Generate a temporary ID
               employeeId: Number(selectedEmployee.id),
+              // start: JSON.stringify(startDate),
+              // end: JSON.stringify(finishDate),
               startDate: startDate.toISOString(),
               finishDate: finishDate.toISOString(),
               status,
@@ -237,6 +251,99 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     }
     handleCloseTooltip();
   };
+
+  const handleDragEnd = (event: DragEndEvent) => { 
+    const { active, over } = event;
+    if (!over || !active.data.current || !over.data.current) return;
+
+    const employees = groupedEmployees.flatMap(([role, employeeList]) => employeeList);
+
+    const draggedShift: EmployeeAvailability = active.data.current.shift;
+    const targetEmployeeId = over.data.current.employeeId;
+    const targetDate: Date = over.data.current.date;
+    const targetRole = over.data.current.role;
+
+    const draggedShiftEmployee = employees.find(e => e.id === draggedShift.employeeId);
+    if (draggedShiftEmployee?.role !== targetRole) {
+      alert("You can only move shifts within the same role group (e.g., Nurse to Nurse).");
+      return;
+    }
+    
+    const shiftsInTargetCell = scheduleData.filter(
+      (s: EmployeeAvailability) =>
+        s.id !== draggedShift.id &&
+        s.employeeId === targetEmployeeId &&
+        s.start && new Date(s.start).toDateString() === targetDate.toDateString()
+    );
+
+    if (shiftsInTargetCell.length > 0) {
+      alert("This time slot is already occupied. Cannot move the shift here.");
+      return;
+    }
+
+    if (!draggedShift.startDate) {
+        console.error("Dragged shift is missing 'start' property", draggedShift);
+        return;
+    }
+
+    const oldStartDate = new Date(draggedShift.startDate);
+    if (isNaN(oldStartDate.getTime())) {
+        console.error("Invalid start date for dragged shift", draggedShift);
+        return;
+    }
+
+    if (oldStartDate.toDateString() === targetDate.toDateString()) {
+      return;
+    }
+
+    const duration = new Date(draggedShift.finishDate!).getTime() - oldStartDate.getTime();
+    const newStartDate = new Date(targetDate);
+    newStartDate.setHours(oldStartDate.getHours(), oldStartDate.getMinutes(), oldStartDate.getSeconds());
+    const newFinishDate = new Date(newStartDate.getTime() + duration);
+
+    if (isNaN(newStartDate.getTime()) || isNaN(newFinishDate.getTime())) {
+        console.error("Calculated new dates are invalid");
+        return;
+    }
+
+    
+    setScheduleData(prev =>
+      prev.map((s: EmployeeAvailability) =>
+        s.id === draggedShift.id
+          ? {
+              ...s,
+              employeeId: targetEmployeeId,
+              start: newStartDate.toISOString(),
+              end: newFinishDate.toISOString(),
+              startDate: newStartDate.toISOString(),      
+              finishDate: newFinishDate.toISOString(),    
+            }
+          : s
+      )
+    );
+    setCellColors(prev => {
+    
+    const oldCellKey = `${draggedShift.employeeId}-${fromZonedTime(draggedShift.startDate, "UTC").toISOString().split("T")[0]}`;
+    const newCellKey = `${targetEmployeeId}-${fromZonedTime(newStartDate, "UTC").toISOString().split("T")[0]}`;
+
+    
+    let newColor = prev[oldCellKey] || "bg-purple-100";
+    if (draggedShift.status === "preferable") newColor = "bg-green-200";
+    if (draggedShift.status === "unavailable") newColor = "bg-yellow-200";
+    if (draggedShift.status === "unreachable") newColor = "bg-red-200";
+    if (draggedShift.status === "vacation") newColor = "bg-blue-200";
+
+    
+    const updated = { ...prev };
+    delete updated[oldCellKey]; 
+    updated[newCellKey] = newColor; 
+    return updated;
+  });
+    
+
+  };
+  
+  
 
   const renderDayHeaders = (currentGroup: string) => (
     <div className="flex bg-gray-100 sticky top-0 z-10">
@@ -330,6 +437,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       ))}
     </div>
   );
+
   const renderAvailabilityTile = (employee: Employee, day: Date) => {
     const cellKey = `${employee.id}-${fromZonedTime(day, "UTC").toISOString().split("T")[0]}`;
 
@@ -356,46 +464,53 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
 
     return (
-      <div
-        className={`flex-shrink-0 border-r border-b border-gray-300 ${cellColor} ${
-          isHovered ? "z-[49]" : ""
-        }`}
-        style={{
-          width: `${cellWidth}px`,
-          height: "50px",
-          boxShadow: isHovered ? "0 0 12px 1px lightblue" : "none",
-        }}
-        onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), employee.role)}
-        onMouseLeave={handleCellLeave}
-        onClick={(e) => handleCellClick(employee, day, e)}
-      >
-        {availability && (
-          <div className="w-full h-full flex items-center justify-center text-xs px-1">
-            {isPlanningFullDay?.get(availability.id) ? (
-              <span className="text-gray-600 font-medium">All Day</span>
-            ) : (
-              <span className="text-gray-700 text-center">
-                {`${formatTime(new Date(availability.startDate))} ${formatTime(
-                  new Date(availability.finishDate)
-                )}`}
-              </span>
-            )}
-          </div>
-        )}
-        {schedule && (
-          <div className="w-full h-full flex items-center justify-center text-xs px-1">
-            {isScheduleFullDay?.get(schedule.id) ? (
-              <span className="text-gray-600 font-medium">All Day</span>
-            ) : (
-              <span className="text-gray-700 text-center">
-                {`${formatTime(new Date(schedule.startDate))} ${formatTime(
-                  new Date(schedule.finishDate)
-                )}`}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      <DroppableCell employee={employee} day={day}>
+        <div
+          className={`flex-shrink-0 border-r border-b border-gray-300 ${cellColor} ${
+            isHovered ? "z-[49]" : ""
+          }`}
+          style={{
+            width: `${cellWidth}px`,
+            height: "50px",
+            boxShadow: isHovered ? "0 0 12px 1px lightblue" : "none",
+          }}
+          onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), employee.role)}
+          onMouseLeave={handleCellLeave}
+          onClick={(e) => handleCellClick(employee, day, e)}
+        >
+          {availability && (
+            <DraggableShift shift={availability}>
+              <div className="w-full h-full flex items-center justify-center text-xs px-1">
+                {isPlanningFullDay?.get(availability.id) ? (
+                  <span className="text-gray-600 font-medium">All Day</span>
+                ) : (
+                  <span className="text-gray-700 text-center">
+                    {`${formatTime(new Date(availability.startDate))} ${formatTime(
+                      new Date(availability.finishDate)
+                    )}`}
+                  </span>
+                )}
+              </div>
+            </DraggableShift>
+          )}
+          {schedule && (
+              <DraggableShift shift={schedule}>
+
+              <div className="w-full h-full flex items-center justify-center text-xs px-1">
+                {isScheduleFullDay?.get(schedule.id) ? (
+                  <span className="text-gray-600 font-medium">All Day</span>
+                ) : (
+                  <span className="text-gray-700 text-center">
+                    {`${formatTime(new Date(schedule.startDate))} ${formatTime(
+                      new Date(schedule.finishDate)
+                    )}`}
+                  </span>
+                )}
+              </div>
+            </DraggableShift>
+          )}
+        </div>
+      </DroppableCell>
     );
   };
 
@@ -428,30 +543,33 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   );
 
   return (
-    <div className="flex-grow">
-      {groupedEmployees.length > 0 && groupedEmployees[0].length > 0 ? (
-        <>
-          {renderGroupSeparator(groupedEmployees[0][0])}
-          {renderDayHeaders(groupedEmployees[0][0])}
-        </>
-      ) : (
-        <>
-          {renderGroupSeparator("")}
-          {renderDayHeaders("")}
-        </>
-      )}
-      {renderEmployeeRows()}
-      {selectedEmployee && selectedDate && showTooltips && (
-        <div ref={tooltipRef}>
-          <EmployeeEventTooltip
-            employee={selectedEmployee}
-            date={selectedDate}
-            onAction={handleAction}
-            position={tooltipPosition}
-          />
-        </div>
-      )}
-    </div>
+    <DndContext onDragEnd={handleDragEnd}>
+      <div className="flex-grow">
+        {groupedEmployees.length > 0 && groupedEmployees[0].length > 0 ? (
+          <>
+            {renderGroupSeparator(groupedEmployees[0][0])}
+            {renderDayHeaders(groupedEmployees[0][0])}
+          </>
+        ) : (
+          <>
+            {renderGroupSeparator("")}
+            {renderDayHeaders("")}
+          </>
+        )}
+        {renderEmployeeRows()}
+        {selectedEmployee && selectedDate && showTooltips && (
+          <div ref={tooltipRef}>
+            <EmployeeEventTooltip
+              employee={selectedEmployee}
+              date={selectedDate}
+              onAction={handleAction}
+              position={tooltipPosition}
+            />
+          </div>
+        )}
+      </div>
+    </DndContext>
+
   );
 };
 
