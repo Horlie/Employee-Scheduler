@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import CustomScheduler from "../components/CustomScheduler";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Navigation from "../components/Navigation";
@@ -23,138 +23,77 @@ export default function Schedule() {
   } = useEmployee();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFullDay, setIsFullDay] = useState<Map<number, boolean>>(new Map());
   const [employeeHours, setEmployeeHours] = useState<Record<number, Map<number, number>>>({});
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const router = useRouter();
 
-  const fetchScheduleData = async () => {
-    try {
-      const parsedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const userId = parsedUser.id;
-      const response = await fetch(`/api/timefold?userId=${userId}`);
-      const data = await response.json();
-      parseAndSetScheduleData(data);
-    } catch (error) {
-      console.error("Error fetching schedule data:", error);
-    } finally {
-      setIsLoading(false);
+ 
+  const getEmployeeIdByName = useCallback((name: string, currentEmployees: Employee[]) => {
+    const employee = currentEmployees.find((emp) => emp.name === name);
+    if (!employee) {
+      console.warn(`Employee not found by name: ${name}`);
+      return null;
     }
-  };
+    return employee.id;
+  }, []); 
 
-  useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (employees.length === 0) {
-      router.replace("/planning");
-    }
+  const parseAndSetScheduleData = useCallback((savedData: any, currentEmployees: Employee[]) => {
 
-    if (user) {
-      setIsLoggedIn(true);
-      setIsLoading(true);
-      fetchScheduleData();
-    } else {
-      setIsLoading(false);
-    }
-  }, [employees, router]);
-
-  useEffect(() => {
-    if (needsRefresh) {
-      setIsLoading(true);
-      fetchScheduleData();
-      setNeedsRefresh(false);
-    }
-  }, [needsRefresh]);
-
-  const handleSaveChanges = async () => {
-    setIsLoading(true);
-    try {
-      const validSchedule = scheduleData.filter(s => typeof s.id === "number" && s.id > 0);
-      const normalizedSchedule = scheduleData.map(s => ({
-        ...s,
-        startDate: typeof s.startDate === "string" ? s.startDate : s.startDate.toISOString(),
-        finishDate: typeof s.finishDate === "string" ? s.finishDate : s.finishDate.toISOString(),
-        start: typeof s.start === "string" ? s.start : s.start?.toISOString?.(),
-        end: typeof s.end === "string" ? s.end : s.end?.toISOString?.(),
-      }));
-      const response = await fetch('/api/update-schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schedule: normalizedSchedule,
-          userId: JSON.parse(localStorage.getItem("user") || "{}").id,
-          month: activeMonth.getMonth() + 1,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save changes to the server.');
-      }
-      
-      console.log("Saving scheduleData:", normalizedSchedule);
-
-    } catch (error) {
-      console.error(error);
-      alert('Error saving changes.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getEmployeeIdByName = (name: string) => {
-    const employee = employees.find((emp: Employee) => emp.name === name);
-    return employee ? employee.id : null;
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setIsLoggedIn(false);
-    setEmployees([]);
-    router.replace("/");
-  };
-
-  function parseAndSetScheduleData(
-    roleData: Record<string, { data: { shifts: TimefoldShift[] } }>
-  ) {
-    const allShifts: TimefoldShift[] = [];
-    
-    Object.values(roleData[0].data).forEach((roleEntry) => {
-      if ("shifts" in roleEntry && Array.isArray(roleEntry.shifts)) {
-        allShifts.push(...roleEntry.shifts);
-      }
-    });
-
-    if (allShifts.length === 0) {
+    console.log("Parsing data received from DB:", savedData);
+    if (!savedData || typeof savedData !== 'object'  || Object.keys(savedData).length === 0) {
+      console.warn("Invalid or empty schedule data received.");
+      setScheduleData([]);
       return;
     }
-
-    const fullDayMap: Map<number, boolean> = new Map();
-    const parsedData = allShifts.map((shift: TimefoldShift) => {
-      const employeeName = shift.employee.name;
-      const employee = employees.find(e => e.name === employeeName);
-      const employeeId = getEmployeeIdByName(employeeName);
-      
-      if (shift.isFullDay) {
-        fullDayMap.set(parseInt(shift.id, 10), true);
-      } else {
-        fullDayMap.set(parseInt(shift.id, 10), false);
+    let allShifts: TimefoldShift[] = [];
+    
+    Object.values(savedData).forEach((roleData: any) => {
+      if (roleData && Array.isArray(roleData.shifts)) {
+        allShifts = allShifts.concat(roleData.shifts);
       }
-      
-      return {
-        id: parseInt(shift.id, 10),
-        employeeId,
-        start: new Date(shift.start),
-        end: new Date(shift.end),
-        startDate: new Date(shift.start),
-        finishDate: new Date(shift.end),
-        status: "scheduled",
-        employee: {
-            name: employeeName,
-            role: employee?.role,
-        }
-      } as EmployeeAvailability;
     });
 
+    console.log(`Total shifts found after parsing: ${allShifts.length}`);
+
+    if (allShifts.length === 0) {
+      setScheduleData([]);
+      return;
+    }
+  
+    const fullDayMap = new Map<number, boolean>();
+    const parsedData = allShifts
+      .map((shift) => {
+        const employeeName = shift.employee?.name;
+        if (!employeeName) return null;
+
+        const employeeId = getEmployeeIdByName(employeeName, currentEmployees);
+        if (!employeeId) return null; 
+
+        const employee = currentEmployees.find(e => e.id === employeeId);
+        const shiftId = parseInt(shift.id, 10);
+        if (isNaN(shiftId)) return null; 
+
+        fullDayMap.set(shiftId, shift.isFullDay);
+
+        return {
+          id: shiftId,
+          employeeId,
+          start: new Date(shift.start),
+          end: new Date(shift.end),
+          startDate: new Date(shift.start),
+          finishDate: new Date(shift.end),
+          status: "scheduled",
+          employee: {
+            name: employeeName,
+            role: employee?.role,
+          },
+        } as EmployeeAvailability;
+      })
+      .filter((shift): shift is EmployeeAvailability => shift !== null); 
+     
+    console.log(`Successfully parsed ${parsedData.length} shifts.`);
     setIsFullDay(fullDayMap);
     setScheduleData(parsedData);
 
@@ -221,13 +160,149 @@ export default function Schedule() {
       employeeHoursObj[key] = value;
     });
     setEmployeeHours(employeeHoursObj);
-    return parsedData;
-  }
+    
+  }, [getEmployeeIdByName, setScheduleData, availabilityData, setCellScheduleColors]);
 
-  const handleRefresh = (value: boolean) => {
-    setNeedsRefresh(value);
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) {
+      router.replace("/");
+      return;
+    }
+    setIsLoggedIn(true);
+
+    const initializePage = async () => {
+      setIsLoading(true);
+      try {
+        const parsedUser = JSON.parse(user);
+        let currentEmployees = employees;
+
+        
+        if (currentEmployees.length === 0) {
+          
+          const response = await fetch(`/api/employees?userId=${parsedUser.id}`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch employees: ${response.statusText}`);
+          }
+          const employeesData = await response.json();
+          
+          currentEmployees = employeesData.employees; 
+          setEmployees(currentEmployees);
+        }
+
+        if (currentEmployees.length === 0) {
+          console.warn("No employees found. Cannot display schedule.");
+          setIsLoading(false);
+          return;
+        }
+
+        
+        const currentMonth = activeMonth.getMonth() + 1;
+        const scheduleResponse = await fetch(`/api/schedules?userId=${parsedUser.id}&month=${currentMonth}`);
+        
+        if (scheduleResponse.status === 404) {
+          console.log("No schedule found for this month.");
+          setScheduleData([]);
+        } else if (scheduleResponse.ok) {
+          const data = await scheduleResponse.json();
+          parseAndSetScheduleData(data, currentEmployees);
+        } else {
+          throw new Error('Failed to fetch schedule data');
+        }
+      } catch (error) {
+        console.error("Error during page initialization:", error);
+        setScheduleData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializePage();
+  }, [activeMonth, needsRefresh, router, setEmployees, employees, parseAndSetScheduleData]); // Убрали 'employees' из зависимостей
+  
+  const fetchScheduleData = async () => {
+    try {
+      const parsedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = parsedUser.id;
+      const currentMonth = activeMonth.getMonth() + 1;
+      
+      // Fetch from the schedules API instead of timefold
+      const response = await fetch(`/api/schedules?userId=${userId}&month=${currentMonth}`);
+      
+        if (response.status === 404) {
+          // No schedule exists for this month yet
+          console.log("No schedule found for this month");
+          setScheduleData([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch schedule data');
+        }
+        
+        const data = await response.json();
+        parseAndSetScheduleData(data, employees);
+      } catch (error) {
+        console.error("Error fetching schedule data:", error);
+        setScheduleData([]);
+      } finally {
+        setIsLoading(false);
+    }
   };
 
+
+  const handleSaveChanges = async () => {
+    setIsLoading(true);
+    try {
+      const validSchedule = scheduleData.filter(s => typeof s.id === "number" && s.id > 0);
+      const normalizedSchedule = scheduleData.map(s => ({
+        ...s,
+        startDate: typeof s.startDate === "string" ? s.startDate : s.startDate.toISOString(),
+        finishDate: typeof s.finishDate === "string" ? s.finishDate : s.finishDate.toISOString(),
+        start: typeof s.start === "string" ? s.start : s.start?.toISOString?.(),
+        end: typeof s.end === "string" ? s.end : s.end?.toISOString?.(),
+      }));
+      const response = await fetch('/api/update-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schedule: normalizedSchedule,
+          userId: JSON.parse(localStorage.getItem("user") || "{}").id,
+          month: activeMonth.getMonth() + 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save changes to the server.');
+      }
+      
+      console.log("Saving scheduleData:", normalizedSchedule);
+
+    } catch (error) {
+      console.error(error);
+      alert('Error saving changes.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+    setEmployees([]);
+    router.replace("/");
+  };
+
+  
+
+  const handleRefresh = (value: boolean) => {
+    
+    if (value) {
+      setNeedsRefresh(prev => !prev); 
+    }
+  };
+  
   return (
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="schedule" />
