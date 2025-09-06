@@ -24,7 +24,7 @@ export default function Schedule() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFullDay, setIsFullDay] = useState<Map<number, boolean>>(new Map());
+  const [isFullDay, setIsFullDay] = useState<Map<string | number, boolean>>(new Map());
   const [employeeHours, setEmployeeHours] = useState<Record<number, Map<number, number>>>({});
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const router = useRouter();
@@ -62,9 +62,9 @@ export default function Schedule() {
       return;
     }
   
-    const fullDayMap = new Map<number, boolean>();
+    const fullDayMap = new Map<string | number, boolean>();
     const parsedData = allShifts
-      .map((shift) => {
+      .map((shift: TimefoldShift) => {
         const employeeName = shift.employee?.name;
         if (!employeeName) return null;
 
@@ -72,8 +72,8 @@ export default function Schedule() {
         if (!employeeId) return null; 
 
         const employee = currentEmployees.find(e => e.id === employeeId);
-        const shiftId = parseInt(shift.id, 10);
-        if (isNaN(shiftId)) return null; 
+        const shiftId = shift.id; 
+        
 
         fullDayMap.set(shiftId, shift.isFullDay);
 

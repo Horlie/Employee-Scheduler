@@ -27,8 +27,8 @@ interface CalendarGridProps {
   scheduleData: EmployeeAvailability[];
   setScheduleData: React.Dispatch<React.SetStateAction<EmployeeAvailability[]>>;
   showTooltips: boolean;
-  isScheduleFullDay: Map<number, boolean>;
-  isPlanningFullDay: Map<number, boolean>;
+  isScheduleFullDay: Map<string | number, boolean>;
+  isPlanningFullDay: Map<string | number, boolean>;
 }
 const DroppableCell: React.FC<{ employee: Employee; day: Date; children: React.ReactNode }> = ({ employee, day, children }) => {
   const { setNodeRef } = useDroppable({

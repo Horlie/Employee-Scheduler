@@ -9,7 +9,7 @@ export interface Employee {
 }
 
 export interface EmployeeAvailability {
-  id: number; // может быть строкой ? когда их создает timefold
+  id: number | string; // может быть строкой ? когда их создает timefold
   employeeId: number;
   
   start?: string | Date; // timefold возвращает start и end
