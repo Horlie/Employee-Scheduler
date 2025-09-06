@@ -223,13 +223,14 @@ function generateMonthlyShifts(
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const timefoldShifts: Array<{
-    id: number;
+    id: string; 
     start: string;
     end: string;
     location: string;
     requiredSkill: string;
     isFullDay: boolean;
   }> = [];
+  let shiftCounter = 1; 
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
@@ -255,8 +256,10 @@ function generateMonthlyShifts(
 
           for (let i = 0; i < shiftCount; i++) {
             const { startTime, endTime } = getShiftTimes(shift, date);
+            const uniqueShiftId = `${role}_${shiftCounter++}`;
+
             timefoldShifts.push({
-              id: timefoldShifts.length + 1,
+              id: uniqueShiftId,
               start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
               end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
               location: "Hospital",

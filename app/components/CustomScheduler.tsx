@@ -46,7 +46,7 @@ interface CustomSchedulerProps {
   roles: string[];
   employeeHours: Record<number, Map<number, number>>;
   needsRefresh: (value: boolean) => void;
-  isScheduleFullDay: Map<number, boolean>;
+  isScheduleFullDay: Map<string | number, boolean>;
   isPlanningFullDay: Map<number, boolean>;
 
   onSaveChanges: () => void;
