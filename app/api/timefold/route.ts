@@ -221,7 +221,7 @@ function generateMonthlyShifts(
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const timefoldShifts: Array<{
-    id: number;
+    id: string;
     start: string;
     end: string;
     location: string;
