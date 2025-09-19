@@ -97,16 +97,16 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
           Preferable
         </button>
         <button
-          className="bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 text-sm"
-          onClick={() => handleAction("delete")}
-        >
-          Delete
-        </button>
-        <button
           className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-sm"
           onClick={() => handleAction("vacation")}
         >
           Vacation
+        </button>
+        <button
+          className="bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 text-sm col-span-2"
+          onClick={() => handleAction("delete")}
+        >
+          Delete
         </button>
       </div>
     </div>
