@@ -227,8 +227,6 @@ function generateMonthlyShifts(
     location: string;
     requiredSkill: string;
     isFullDay: boolean;
-    coverageGroupId?: string;
-    coveragePart?: number;
     midTime?: string;
   }> = [];
   let shiftCounter = 1; 
