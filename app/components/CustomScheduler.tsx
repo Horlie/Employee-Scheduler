@@ -83,9 +83,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   
   const [isDownloading, setIsDownloading] = useState(false);
 
-  
-  
-  const [isDownloading, setIsDownloading] = useState(false);
+
 
   // Add activeMonth from EmployeeContext
   const { activeMonth, setActiveMonth } = useEmployee();

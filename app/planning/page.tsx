@@ -112,7 +112,7 @@ export default function Planning() {
         finishDate.getHours() === 23 &&
         finishDate.getMinutes() === 59
       ) {
-        newIsFullDay.set(availability.id, true);
+        newIsFullDay.set(Number(availability.id), true);
       }
     });
     setIsFullDay(newIsFullDay);
