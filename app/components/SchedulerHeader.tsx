@@ -14,6 +14,7 @@ interface SchedulerHeaderProps {
   isDownloading: boolean;
 
   onSaveChanges: () => void;
+
 }
 
 const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
@@ -30,6 +31,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
   isDownloading,
 
   onSaveChanges,
+
 }) => {
   return (
     <div
@@ -103,7 +105,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
               >
                 {isDownloading ? "Creating PDF..." : "Download as PDF"}
               </button>
-              
+
 
             </>
           )}

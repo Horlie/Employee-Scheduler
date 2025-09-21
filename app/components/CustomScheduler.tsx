@@ -9,6 +9,8 @@ import SettingsModal from "./SettingsModal";
 import LoadingSpinner from "./LoadingSpinner";
 import { useEmployee } from "../context/EmployeeContext";
 
+import { generateSchedulePDF } from "./SchedulePDFGenerator";
+
 // Add this function near the top of the file, after imports
 function isLatvianHoliday(date: Date): boolean {
   const month = date.getMonth();
@@ -77,6 +79,9 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  
+  const [isDownloading, setIsDownloading] = useState(false);
 
   
   
@@ -102,7 +107,6 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     setCurrentDate(activeMonth);
   }, [activeMonth]);
 
-
   const handleDownloadPDF = () => {
     setIsDownloading(true);
     generateSchedulePDF("scheduler-grid-to-download")
@@ -110,7 +114,6 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         setIsDownloading(false);
       });
   };
-  
   
   const days = generateMonthDays(currentDate);
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -333,42 +336,46 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         isDownloading={isDownloading}
 
         onSaveChanges={onSaveChanges}
+
       />
-      <div className="flex justify-center bg-gray-100 overflow-x-auto" ref={gridRef}>
-        <div className="flex overflow-x-auto">
-          <EmployeeColumn
-            groupedEmployees={groupedEmployees}
-            renderGroupSeparator={renderGroupSeparator}
-            renderSearchBar={renderSearchBar}
-            hoveredEmployee={hoveredEmployee}
-            showTooltips={showTooltips}
-            employeeHours={employeeHours} // Pass the prop
-          />
-          <CalendarGrid
-            groupedEmployees={groupedEmployees}
-            days={days}
-            daysOfWeek={daysOfWeek}
-            cellWidth={cellWidth}
-            isToday={isToday}
-            isLatvianHoliday={isLatvianHoliday}
-            hoveredDay={hoveredDay}
-            hoveredEmployee={hoveredEmployee}
-            hoveredGroup={hoveredGroup}
-            handleCellHover={handleCellHover}
-            handleCellLeave={handleCellLeave}
-            renderGroupSeparator={renderGroupSeparator}
-            cellColors={cellColors}
-            setCellColors={setCellColors}
-            availabilityData={availabilityData}
-            setAvailabilityData={setAvailabilityData}
-            scheduleData={scheduleData}
-            setScheduleData={setScheduleData}
-            showTooltips={showTooltips}
-            isScheduleFullDay={isScheduleFullDay}
-            isPlanningFullDay={isPlanningFullDay}
-          />
+      <div id="scheduler-grid-to-download">
+        <div className="flex justify-center bg-gray-100 overflow-x-auto" ref={gridRef}>
+          <div className="flex overflow-x-auto">
+            <EmployeeColumn
+              groupedEmployees={groupedEmployees}
+              renderGroupSeparator={renderGroupSeparator}
+              renderSearchBar={renderSearchBar}
+              hoveredEmployee={hoveredEmployee}
+              showTooltips={showTooltips}
+              employeeHours={employeeHours} // Pass the prop
+            />
+            <CalendarGrid
+              groupedEmployees={groupedEmployees}
+              days={days}
+              daysOfWeek={daysOfWeek}
+              cellWidth={cellWidth}
+              isToday={isToday}
+              isLatvianHoliday={isLatvianHoliday}
+              hoveredDay={hoveredDay}
+              hoveredEmployee={hoveredEmployee}
+              hoveredGroup={hoveredGroup}
+              handleCellHover={handleCellHover}
+              handleCellLeave={handleCellLeave}
+              renderGroupSeparator={renderGroupSeparator}
+              cellColors={cellColors}
+              setCellColors={setCellColors}
+              availabilityData={availabilityData}
+              setAvailabilityData={setAvailabilityData}
+              scheduleData={scheduleData}
+              setScheduleData={setScheduleData}
+              showTooltips={showTooltips}
+              isScheduleFullDay={isScheduleFullDay}
+              isPlanningFullDay={isPlanningFullDay}
+            />
+          </div>
         </div>
       </div>
+      
       {loading && <LoadingSpinner />}
       <SettingsModal isOpen={isSettingsModalOpen} onClose={handleSettingsClose} roles={roles} />
     </div>
