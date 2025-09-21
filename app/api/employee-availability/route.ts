@@ -83,7 +83,7 @@ export async function GET(request: Request) {
       },
     });
 
-    const convertedAvailability = availability.map((avail) => ({
+    const convertedAvailability = availability.map((avail: { startDate: Date; finishDate: Date; }) => ({
       ...avail,
       startDate: convertUTCToLocalDateIgnoringTimezone(avail.startDate),
       finishDate: convertUTCToLocalDateIgnoringTimezone(avail.finishDate),
