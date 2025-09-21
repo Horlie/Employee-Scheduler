@@ -9,13 +9,29 @@ export interface Employee {
 }
 
 export interface EmployeeAvailability {
-  id: number;
+  id: number | string; // может быть строкой ? когда их создает timefold
   employeeId: number;
-  startDate: Date | string;
-  finishDate: Date | string;
-  status: string;
-  isFullDay: boolean;
+  
+  start?: string | Date; // timefold возвращает start и end
+  end?: string | Date;
+
+ 
+  startDate: string | Date; // для страницы planning 
+  finishDate: string | Date;
+  
+  status?: string;
+  isFullDay?: boolean;
+  employee?: { name: string, role?: string }; 
 }
+
+// export interface EmployeeAvailability {
+//   id: number;
+//   employeeId: number;
+//   startDate: Date | string;
+//   finishDate: Date | string;
+//   status: string;
+//   isFullDay: boolean;
+// }
 
 export interface SchedulerEvent {
   id: string;

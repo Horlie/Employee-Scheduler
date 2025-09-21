@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
 import SchedulerHeader from "./SchedulerHeader";
 import EmployeeColumn from "./EmployeeColumn";
@@ -46,8 +46,10 @@ interface CustomSchedulerProps {
   roles: string[];
   employeeHours: Record<number, Map<number, number>>;
   needsRefresh: (value: boolean) => void;
-  isScheduleFullDay: Map<number, boolean>;
+  isScheduleFullDay: Map<string | number, boolean>;
   isPlanningFullDay: Map<number, boolean>;
+
+  onSaveChanges: () => void;
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
@@ -60,11 +62,14 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   setScheduleData,
   showSettings = true, // Default to true
   showTooltips = true, // Default to true
-  roles,
+  // roles,
   employeeHours,
   needsRefresh,
   isScheduleFullDay,
   isPlanningFullDay,
+
+  onSaveChanges,
+
 }) => {
   const [cellWidth, setCellWidth] = useState(50);
   const [searchTerm, setSearchTerm] = useState("");
@@ -78,9 +83,24 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   
   const [isDownloading, setIsDownloading] = useState(false);
 
+  
+  
+  const [isDownloading, setIsDownloading] = useState(false);
+
   // Add activeMonth from EmployeeContext
   const { activeMonth, setActiveMonth } = useEmployee();
   const [currentDate, setCurrentDate] = useState(activeMonth);
+
+  const roles = useMemo(() => {
+  if (!employees || !Array.isArray(employees)) {
+    console.warn("Employees is not an array or is empty");
+    return [];
+  }
+    
+    const roleSet = new Set<string>();
+    employees.forEach((employee) => roleSet.add(employee.role));
+    return Array.from(roleSet);
+  }, [employees]);
 
   // Update useEffect to listen to activeMonth changes
   useEffect(() => {
@@ -129,11 +149,20 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         console.log("newCellWidth:", newCellWidth);
       }
     };
-
+    
     updateCellWidth();
 
+    if (typeof window !== 'undefined') {
     window.addEventListener("resize", updateCellWidth);
     window.addEventListener("load", updateCellWidth);
+    
+    return () => {
+      window.removeEventListener("resize", updateCellWidth);
+      window.removeEventListener("load", updateCellWidth);
+    };
+  }
+    // window.addEventListener("resize", updateCellWidth);
+    // window.addEventListener("load", updateCellWidth);
     return () => {
       window.removeEventListener("resize", updateCellWidth);
       window.removeEventListener("load", updateCellWidth);
@@ -223,10 +252,10 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     }
 
     const monthForTimefold = currentDate.getMonth(); 
-    const monthForDatabase = currentDate.getMonth() + 1;;
+    const monthForDatabase = currentDate.getMonth() + 1;
 
     console.log(
-      `Sending request to /api/timefold with employeeId: ${employeeId}, month: ${monthForTimefold}`
+      `Sending request to /api/timefold with employeeId: ${employeeId}, month index: ${monthForTimefold}`
     );
 
     // Make POST request using fetch
@@ -293,6 +322,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   return (
     <div className="flex-grow bg-white mb-5 ">
       <SchedulerHeader
+
         currentDate={currentDate}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
@@ -304,6 +334,9 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
 
         onDownloadClick={handleDownloadPDF}
         isDownloading={isDownloading}
+
+        onSaveChanges={onSaveChanges}
+
       />
       <div id="scheduler-grid-to-download">
         <div className="flex justify-center bg-gray-100 overflow-x-auto" ref={gridRef}>

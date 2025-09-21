@@ -265,6 +265,7 @@ function generateMonthlyShifts(
 
           for (let i = 0; i < shiftCount; i++) {
             const { startTime, endTime } = getShiftTimes(shift, date);
+
             const shouldSplitShift = shift.isFullDay && availableEmployeesCount > shiftCount * 2;
 
            if (shouldSplitShift) {

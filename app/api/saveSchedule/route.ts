@@ -5,6 +5,7 @@ export async function POST(request: Request) {
     await prisma.$connect();
 
     const { employeeId, month, data } = await request.json();
+    console.log("Saving data to database:", data);
 
     try {
       const schedule = await prisma.schedule.upsert({

@@ -12,6 +12,9 @@ interface SchedulerHeaderProps {
 
   onDownloadClick: () => void;
   isDownloading: boolean;
+
+  onSaveChanges: () => void;
+
 }
 
 const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
@@ -26,11 +29,13 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
 
   onDownloadClick,
   isDownloading,
+
+  onSaveChanges,
+
 }) => {
   return (
     <div
-      className={`flex bg-gray-100 justify-between items-center px-10 py-5 border-b border-gray-300`}
-    >
+      className={`flex bg-gray-100 justify-between items-center px-10 py-5 border-b border-gray-300`}>
       <div className="text-left ml-3 text-2xl text-gray-700 font-bold uppercase tracking-widest">
         {currentDate.toLocaleString("en-GB", {
           month: "long",
@@ -38,6 +43,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
         })}
       </div>
       <div className="flex items-center">
+        
         <div className="flex">
           <div className="flex mr-2">
             <button
@@ -75,6 +81,13 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
             <>
               <div className="w-px h-py bg-gray-300 mx-2"></div>
               <button
+                onClick={onSaveChanges}
+                disabled={loading}
+                className="px-4 py-1.5 mr-2 font-semibold bg-teal-500 text-white rounded-lg shadow-md hover:bg-teal-600 disabled:bg-gray-400"
+              >
+                {loading ? "Saving..." : "Save Changes"}
+              </button>
+              <button
                 type="button"
                 className={`px-3 py-1.5 ml-2 text-white font-medium rounded-lg bg-green-600 hover:bg-green-700 ${
                   loading ? "opacity-50 cursor-not-allowed" : ""
@@ -92,6 +105,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
               >
                 {isDownloading ? "Creating PDF..." : "Download as PDF"}
               </button>
+
 
             </>
           )}
