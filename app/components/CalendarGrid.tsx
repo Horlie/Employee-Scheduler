@@ -104,7 +104,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   const handleAction = async (
-    action: "unavailable" | "unreachable" | "preferable" | "delete",
+    action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
     startDate: Date,
     finishDate: Date
   ) => {
@@ -204,6 +204,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           case "preferable":
             newColor = "bg-green-200";
             status = "preferable";
+            break;
+          case "vacation":
+            newColor = "bg-blue-200"; 
+            status = "vacation";
             break;
         }
 
