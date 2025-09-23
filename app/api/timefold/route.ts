@@ -168,6 +168,14 @@ function buildTimefoldJson(
     .map((employee: Employee) => ({
       name: employee.name,
       skills: [employee.role],
+      vacationIntervals: employee.availability
+        ? employee.availability
+            .filter((a: EmployeeAvailability) => a.status === "vacation")
+            .map((a: EmployeeAvailability) => ({
+              start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+            }))
+        : [],
       unavailableIntervals: employee.availability
         ? employee.availability
             .filter((a: EmployeeAvailability) => a.status === "unreachable")
