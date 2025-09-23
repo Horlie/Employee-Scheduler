@@ -56,6 +56,37 @@ export async function POST(request: Request) {
             userId: parseInt(userId),
           },
         });
+        const shiftString = shift.isFullDay
+          ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)})`
+          : `${shift.startTime.slice(0, -3)}-${shift.endTime.slice(0, -3)}`;
+
+        
+        let json = "{";
+        for (const role of shift.role) {
+            json += 
+            `"${role}":{
+              "${shiftString}":{
+                "Friday": 1,
+                "Monday": 1,
+                "Sunday": 1,
+                "Tuesday": 1,
+                "Saturday": 1,
+                "Thursday": 1,
+                "Wednesday": 1
+              }
+            },`;
+        }
+        json = json.slice(0, json.length);
+        json += "}";
+        
+      
+
+        await prisma.user.update({
+          where: { id: parseInt(userId) },
+          data: {
+            roleSettings: json
+          }
+        });
       }
     }
 

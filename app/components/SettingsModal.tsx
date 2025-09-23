@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Employee, Shift, RoleSettings } from "../types/scheduler";
 import { useEmployee } from "../context/EmployeeContext";
+import { useRouter } from "next/navigation";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [createEmployeeError, setCreateEmployeeError] = useState<string | null>(null);
   const { employees, setEmployees } = useEmployee();
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   const initializeRoleSettings = (): RoleSettings => {
     const initialSettings: RoleSettings = {};
@@ -243,6 +245,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       });
       setUploadStatus("Employees imported successfully!");
       setSelectedFile(null);
+      router.refresh();
     } catch (error: any) {
       console.error("Import Error:", error);
       setImportError(error.message);
@@ -269,6 +272,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setCreateEmployeeStatus("Employee created successfully!");
       setEmployeeName("");
       setEmployeeRole("");
+      router.refresh();
     } catch (error: any) {
       console.error("Error creating employee:", error);
       setCreateEmployeeError("Failed to create employee. Please try again.");
