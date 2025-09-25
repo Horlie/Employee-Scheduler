@@ -191,9 +191,8 @@ export default function Schedule() {
         }
 
         if (currentEmployees.length === 0) {
-          console.warn("No employees found. Cannot display schedule.");
-          setIsLoading(false);
-          return;
+          router.replace("/planning");
+          throw new Error("No employees found. Cannot display schedule.");
         }
 
         

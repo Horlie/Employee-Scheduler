@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Employee, Shift, RoleSettings } from "../types/scheduler";
 import { useEmployee } from "../context/EmployeeContext";
+import { useRouter } from "next/navigation";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [createEmployeeError, setCreateEmployeeError] = useState<string | null>(null);
   const { employees, setEmployees } = useEmployee();
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   const initializeRoleSettings = (): RoleSettings => {
     const initialSettings: RoleSettings = {};
@@ -243,6 +245,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       });
       setUploadStatus("Employees imported successfully!");
       setSelectedFile(null);
+      router.refresh();
     } catch (error: any) {
       console.error("Import Error:", error);
       setImportError(error.message);
@@ -269,6 +272,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setCreateEmployeeStatus("Employee created successfully!");
       setEmployeeName("");
       setEmployeeRole("");
+      router.refresh();
     } catch (error: any) {
       console.error("Error creating employee:", error);
       setCreateEmployeeError("Failed to create employee. Please try again.");
@@ -347,6 +351,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     <input
                       id="monthlyHours"
                       type="number"
+                      min="0"
+                      max="170"
                       className="p-2 focus:border-b-2 focus:border-indigo-500 border-b border-gray-300 outline-none bg-gray-50 text-center rounded-md"
                       placeholder={initialMonthlyHours.toString()}
                       value={monthlyHours}
@@ -433,6 +439,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       <input
                         id="shiftStart"
                         type="time"
+                        
                         required
                         className={`p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500`}
                         value={startTime}

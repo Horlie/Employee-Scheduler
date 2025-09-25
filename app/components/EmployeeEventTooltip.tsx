@@ -8,7 +8,7 @@ interface EmployeeEventTooltipProps {
     action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
     startDate: Date,
     finishDate: Date
-  ) => void;
+  ) => void; 
   position: { top: number; left: number };
 }
 
@@ -27,7 +27,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
     const finishDate = new Date(date);
     if (isFullDay) {
       startDate.setHours(0, 0, 0, 0);
-      finishDate.setHours(23, 59, 59, 999);
+      finishDate.setHours(23, 59, 59, 999); 
     } else {
       const [startHours, startMinutes] = startTime.split(":").map(Number);
       const [endHours, endMinutes] = endTime.split(":").map(Number);
@@ -103,7 +103,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
           Vacation
         </button>
         <button
-          className="bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 text-sm"
+          className="bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 text-sm col-span-2"
           onClick={() => handleAction("delete")}
         >
           Delete
