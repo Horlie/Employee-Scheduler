@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Employee } from "../types/scheduler";
+import TimePicker from "react-accessible-time-picker";
 
 interface EmployeeEventTooltipProps {
   employee: Employee;
@@ -39,7 +40,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
 
   return (
     <div
-      className="absolute z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-64"
+      className="absolute z-10 bg-white border border-gray-300 rounded-lg shadow-lg p-4 min-w-max"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
@@ -62,42 +63,32 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
       </div>
       {!isFullDay && (
         <div className="flex space-x-2 mb-2">
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
-          />
-          <span className="text-sm pt-1">to</span>
-          <input
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
-          />
+          <TimePicker minuteStep={10}  is24Hour={true} onChange={(value) => setStartTime(value.hour+":"+value.minute)} />
+          <span className="text-sm pt-2.5">to</span>
+          <TimePicker minuteStep={10} is24Hour={true} onChange={(value) => setEndTime(value.hour+":"+value.minute)} />
         </div>
       )}
       <div className="grid grid-cols-2 gap-2">
         <button
-          className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 text-sm"
+          className="bg-yellow-500 text-white px-4 py-1 rounded hover:bg-yellow-600 text-sm"
           onClick={() => handleAction("unavailable")}
         >
           Unavailable
         </button>
         <button
-          className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-sm"
+          className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600 text-sm"
           onClick={() => handleAction("unreachable")}
         >
           Unreachable
         </button>
         <button
-          className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 text-sm"
+          className="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600 text-sm"
           onClick={() => handleAction("preferable")}
         >
           Preferable
         </button>
         <button
-          className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-sm"
+          className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600 text-sm"
           onClick={() => handleAction("vacation")}
         >
           Vacation

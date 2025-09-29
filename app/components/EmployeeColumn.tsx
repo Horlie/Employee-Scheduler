@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, type JSX } from "react";
 import { Employee } from "../types/scheduler";
 import RateToolTip from "./RateToolTip";
 import { useEmployee } from "../context/EmployeeContext";

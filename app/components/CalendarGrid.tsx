@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, type JSX } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { getWeek, format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
