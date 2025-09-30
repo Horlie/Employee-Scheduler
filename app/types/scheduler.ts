@@ -6,6 +6,7 @@ export interface Employee {
   rate: number;
   role: string;
   availability?: EmployeeAvailability[];
+  gender: string;
 }
 
 export interface EmployeeAvailability {
