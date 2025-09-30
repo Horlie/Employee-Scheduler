@@ -13,7 +13,6 @@ interface SchedulerHeaderProps {
   onDownloadClick: () => void;
   isDownloading: boolean;
 
-  onSaveChanges: () => void;
 
 }
 
@@ -30,7 +29,6 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
   onDownloadClick,
   isDownloading,
 
-  onSaveChanges,
 
 }) => {
   return (
@@ -80,13 +78,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
           {!showSettings && (
             <>
               <div className="w-px h-py bg-gray-300 mx-2"></div>
-              <button
-                onClick={onSaveChanges}
-                disabled={loading}
-                className="px-4 py-1.5 mr-2 font-semibold bg-teal-500 text-white rounded-lg shadow-md hover:bg-teal-600 disabled:bg-gray-400"
-              >
-                {loading ? "Saving..." : "Save Changes"}
-              </button>
+              
               <button
                 type="button"
                 className={`px-3 py-1.5 ml-2 text-white font-medium rounded-lg bg-green-600 hover:bg-green-700 ${

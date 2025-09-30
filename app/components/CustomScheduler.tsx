@@ -49,7 +49,10 @@ interface CustomSchedulerProps {
   isScheduleFullDay: Map<string | number, boolean>;
   isPlanningFullDay: Map<number, boolean>;
 
-  onSaveChanges: () => void;
+  isDirty?: boolean;
+  onSaveChanges?: () => void;
+  onCancelChanges?: () => void;
+  onScheduleChange?: () => void;
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
@@ -68,7 +71,10 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   isScheduleFullDay,
   isPlanningFullDay,
 
-  onSaveChanges,
+  isDirty = false,
+  onSaveChanges = () => {},
+  onCancelChanges = () => {},
+  onScheduleChange = () => {},
 
 }) => {
   const [cellWidth, setCellWidth] = useState(50);
@@ -333,7 +339,6 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         onDownloadClick={handleDownloadPDF}
         isDownloading={isDownloading}
 
-        onSaveChanges={onSaveChanges}
 
       />
       <div id="scheduler-grid-to-download">
@@ -369,6 +374,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
               showTooltips={showTooltips}
               isScheduleFullDay={isScheduleFullDay}
               isPlanningFullDay={isPlanningFullDay}
+              onScheduleChange={onScheduleChange}
             />
           </div>
         </div>

@@ -29,6 +29,7 @@ interface CalendarGridProps {
   showTooltips: boolean;
   isScheduleFullDay: Map<string | number, boolean>;
   isPlanningFullDay: Map<string | number, boolean>;
+  onScheduleChange: () => void;
 }
 const DroppableCell: React.FC<{ employee: Employee; day: Date; children: React.ReactNode }> = ({ employee, day, children }) => {
   const { setNodeRef } = useDroppable({
@@ -60,8 +61,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   showTooltips,
   isScheduleFullDay,
   isPlanningFullDay,
-
-  
+  onScheduleChange,
 }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -332,7 +332,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     if (draggedShift.status === "unavailable") newColor = "bg-yellow-200";
     if (draggedShift.status === "unreachable") newColor = "bg-red-200";
     if (draggedShift.status === "vacation") newColor = "bg-blue-200";
-
+    if (oldStartDate.toDateString() !== targetDate.toDateString()) {
+      onScheduleChange();
+    }
     
     const updated = { ...prev };
     delete updated[oldCellKey]; 

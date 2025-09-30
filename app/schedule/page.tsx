@@ -28,6 +28,9 @@ export default function Schedule() {
   const [employeeHours, setEmployeeHours] = useState<Record<number, Map<number, number>>>({});
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const router = useRouter();
+  const [originalScheduleData, setOriginalScheduleData] = useState<EmployeeAvailability[]>([]);
+  const [originalCellColors, setOriginalCellColors] = useState<Record<string, string>>({});
+  const [isDirty, setIsDirty] = useState(false);
 
  
   const getEmployeeIdByName = useCallback((name: string, currentEmployees: Employee[]) => {
@@ -96,8 +99,12 @@ export default function Schedule() {
     console.log(`Successfully parsed ${parsedData.length} shifts.`);
     setIsFullDay(fullDayMap);
     setScheduleData(parsedData);
+    setOriginalScheduleData(parsedData);
 
     const newCellColors: Record<string, string> = {};
+    setCellScheduleColors(newCellColors);
+    setOriginalCellColors(newCellColors);
+    setIsDirty(false);
     parsedData.forEach((availability: EmployeeAvailability) => {
       const shiftStart = new Date(availability.startDate);
       const shiftEnd = new Date(availability.finishDate);
@@ -284,6 +291,19 @@ export default function Schedule() {
     } finally {
       setIsLoading(false);
     }
+    setOriginalScheduleData(scheduleData);
+    setOriginalCellColors(cellScheduleColors);
+    setIsDirty(false);
+  };
+  const handleCancelChanges = () => {
+    setScheduleData(originalScheduleData);
+    setCellScheduleColors(originalCellColors);
+    setIsDirty(false);
+  };
+  const handleScheduleChange = () => {
+    if (!isDirty) {
+      setIsDirty(true);
+    }
   };
 
   const handleLogout = () => {
@@ -306,24 +326,43 @@ export default function Schedule() {
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="schedule" />
       {isLoading && <LoadingSpinner />}
-      <div className="flex-grow overflow-y-auto rounded-2xl border-2 border-gray-300 mt-16 bg-gray-100 overflow-x-auto">
-        <CustomScheduler
-          employees={employees}
-          cellColors={cellScheduleColors}
-          setCellColors={setCellScheduleColors}
-          availabilityData={[]}
-          setAvailabilityData={() => {}}
-          scheduleData={scheduleData}
-          setScheduleData={setScheduleData}
-          showSettings={false}
-          showTooltips={false}
-          roles={[]}
-          employeeHours={employeeHours}
-          needsRefresh={handleRefresh}
-          isScheduleFullDay={isFullDay}
-          isPlanningFullDay={new Map()}
-          onSaveChanges={handleSaveChanges}
-        />
+      <div className="relative flex-grow">
+        <div className="overflow-y-auto rounded-2xl border-2 border-gray-300 mt-16 bg-gray-100 overflow-x-auto">
+          <CustomScheduler
+            employees={employees}
+            cellColors={cellScheduleColors}
+            setCellColors={setCellScheduleColors}
+            availabilityData={[]}
+            setAvailabilityData={() => {}}
+            scheduleData={scheduleData}
+            setScheduleData={setScheduleData}
+            showSettings={false}
+            showTooltips={false}
+            roles={[]}
+            employeeHours={employeeHours}
+            needsRefresh={handleRefresh}
+            isScheduleFullDay={isFullDay}
+            isPlanningFullDay={new Map()}
+            onScheduleChange={handleScheduleChange}
+          />
+        </div>
+        {isDirty && (
+          <div className="absolute bottom-5 right-5 z-20 bg-white p-3 rounded-lg shadow-lg flex items-center gap-3">
+            <p className="text-sm text-gray-600 mr-2">You have unsaved changes.</p>
+            <button
+              onClick={handleCancelChanges}
+              className="px-4 py-2 font-semibold bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveChanges}
+              className="px-4 py-2 font-semibold bg-teal-500 text-white rounded-lg shadow-md hover:bg-teal-600"
+            >
+              Save Changes
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
