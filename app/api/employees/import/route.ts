@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
     const employeesToCreate = records.map((record: any) => ({
       name: record[0],
       role: record[1],
+      gender: record[2],
       userId: Number(userId),
+
     }));
     console.log(employeesToCreate);
     // Insert employees into the database

@@ -33,7 +33,19 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
       )
     );
   };
-
+  const getGender = (gender: string | null | undefined): string => {
+    if (!gender) {
+      return ""; 
+    }
+    switch (gender.toLowerCase()) {
+      case 'male':
+        return 'Mr. ';
+      case 'female':
+        return 'Ms. ';
+      default:
+        return ''; 
+    }
+  };
   const handleRateClick = (
     employeeId: string,
     currentRate: number,
@@ -137,6 +149,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
 
                 <div className="flex flex-col">
                   <div className="font-semibold text-sm">
+                    {getGender(employee.gender)} 
                     {employee.name.split(" ").slice(0, 2).join(" ")}
                     {/* Display total hours */}
                     {!showTooltips && (
