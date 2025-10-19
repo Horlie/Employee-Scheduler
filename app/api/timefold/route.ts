@@ -3,6 +3,7 @@ import { prisma } from "@/app/lib/prisma";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 import { Employee, EmployeeAvailability, Shift, RoleSettings, User } from "@/app/types/scheduler";
+import { getYear } from "date-fns";
 
 const BACKEND_URL = process.env.BACKEND_URL;
 export const maxDuration = 60;
@@ -161,6 +162,24 @@ function buildTimefoldJson(
   role: string, 
   allEmployees: Employee[]
 ) {
+
+  let map = new Map<Employee, number>;
+  roleEmployees.forEach(
+    (employee) => {
+    const daysInMonth = new Date(new Date().getFullYear(), month, 0).getDate();
+    const vacationDays = employee.availability?.filter(avail =>
+      avail.status === 'vacation' &&
+      new Date(avail.startDate).getMonth() === month
+    ).length ?? 0;
+
+    let adjustedRate = employee.rate;
+    if (vacationDays > 0) {
+      adjustedRate = (daysInMonth - vacationDays) / daysInMonth * employee.rate;
+    }
+    map.set(employee, adjustedRate);
+    });
+  
+
   const timefoldEmployees = roleEmployees
     .filter(
       (employee) => employee.role === role && Math.floor(user.monthlyHours * employee.rate) > 0
@@ -200,7 +219,7 @@ function buildTimefoldJson(
               end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
             }))
         : [],
-      monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * employee.rate) : 160,
+      monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * (map.get(employee)  ?? employee.rate)) : 160,
     }));
 
   const timefoldShifts = generateMonthlyShifts(
