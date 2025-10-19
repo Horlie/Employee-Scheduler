@@ -248,12 +248,18 @@ function generateMonthlyShifts(
       dayOfWeek
     ];
     const availableEmployeesCount = employeesInRole.filter(emp => {
-      
       const isUnavailable = emp.availability?.some(avail => {
-        const availDate = new Date(avail.startDate).toDateString();
-        return availDate === date.toDateString() && (avail.status === 'unreachable' || avail.status === 'vacation');
+        const start = new Date(avail.startDate);
+        const finish = new Date(avail.finishDate); 
+        const status = (avail.status ?? "").toLowerCase();
+
+        const isUnavailableStatus = status === "unavailable" || status === "vacation";
+        const isWithinRange = date >= start && date <= finish;
+
+        return isWithinRange && isUnavailableStatus;
       });
-      return !isUnavailable; 
+      
+      return !isUnavailable;
     }).length;
 
     shifts.forEach((shift) => {
@@ -274,12 +280,12 @@ function generateMonthlyShifts(
           for (let i = 0; i < shiftCount; i++) {
             const { startTime, endTime } = getShiftTimes(shift, date);
 
-            const shouldSplitShift = shift.isFullDay && availableEmployeesCount > shiftCount * 2;
+            const shouldSplitShift = shift.isFullDay && availableEmployeesCount >= parseInt(shift.numberToSplitAt);
 
            if (shouldSplitShift) {
               console.log(`Splitting Full Day shift on ${date.toLocaleDateString()} for role '${role}'. Available employees: ${availableEmployeesCount}`);
               
-              const midTime = new Date(startTime.getTime() + 12 * 60 * 60 * 1000);
+              const midTime = new Date(startTime.getTime() + parseInt(shift.hourToSplitAt) * 60 * 60 * 1000);
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,

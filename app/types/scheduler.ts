@@ -51,6 +51,8 @@ export interface Shift {
   days: string[];
   role: string[];
   isFullDay: boolean;
+  numberToSplitAt: string;
+  hourToSplitAt: string;
 }
 
 export interface User {

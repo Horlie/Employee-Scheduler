@@ -51,6 +51,8 @@ model Shift {
   days      String[]
   role      String[]
   isFullDay Boolean  @default(false)
+  numberToSplitAt String
+  hourToSplitAt String
 }
 
 model Schedule {
