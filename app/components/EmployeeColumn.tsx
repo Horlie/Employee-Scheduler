@@ -22,8 +22,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
 }) => {
   const [tooltipEmployeeId, setTooltipEmployeeId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
-  const { setEmployees } = useEmployee();
-  const { activeMonth } = useEmployee();
+  const { setEmployees, activeMonth, availabilityData } = useEmployee();
 
   const handleRateUpdate = (employeeId: string, newRate: number) => {
     // Update global EmployeeContext
@@ -128,28 +127,46 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                 {renderSearchBar()}
               </>
             )}
-            {employees.map((employee) => (
-              <div
-                key={employee.id}
-                className={`flex items-center p-2 border-l border-b border-r border-gray-300 h-[50px]
-                  ${hoveredEmployee === employee.id.toString() ? "bg-lightblue z-[49]" : ""}`}
-                style={{
-                  boxShadow:
-                    hoveredEmployee === employee.id.toString()
-                      ? "0px 0px 10px 3px lightblue"
-                      : "none",
-                }}
-              >
+            {employees.map((employee) => {
+              const daysInMonth = new Date(activeMonth.getFullYear(), activeMonth.getMonth() + 1, 0).getDate();
+              const vacationDays = availabilityData.filter(avail =>
+                avail.employeeId === employee.id &&
+                avail.status === 'vacation' &&
+                new Date(avail.startDate).getMonth() === activeMonth.getMonth()
+              ).length;
+
+              let adjustedRate = employee.rate;
+              if (vacationDays > 0) {
+                adjustedRate = (daysInMonth - vacationDays) / daysInMonth * employee.rate;
+              }
+
+              const isRateAdjusted = vacationDays > 0;
+              return (
                 <div
-                  className="w-8 h-8 rounded-full border border-gray-500 flex items-center justify-center mr-2 cursor-pointer hover:text-indigo-600 hover:border-indigo-600"
-                  onClick={(e) => handleRateClick(employee.id.toString(), employee.rate, e)}
+                  key={employee.id}
+                  className={`flex items-center p-2 border-l border-b border-r border-gray-300 h-[50px]
+                    ${hoveredEmployee === employee.id.toString() ? "bg-lightblue z-[49]" : ""}`}
+                  style={{
+                    boxShadow:
+                      hoveredEmployee === employee.id.toString()
+                        ? "0px 0px 10px 3px lightblue"
+                        : "none",
+                  }}
                 >
-                  {employee.rate.toFixed(2)}
-                </div>
+                  <div
+                    className={`w-8 h-8 rounded-full border flex items-center justify-center mr-2 cursor-pointer transition-colors ${
+                      isRateAdjusted
+                        ? 'text-red-500 border-red-500 hover:text-red-700 hover:border-red-700'
+                        : 'border-gray-500 hover:text-indigo-600 hover:border-indigo-600'
+                    }`}
+                    onClick={(e) => handleRateClick(employee.id.toString(), employee.rate, e)}
+                  >
+                    {adjustedRate.toFixed(2)}
+                  </div>
 
                 <div className="flex flex-col">
                   <div className="font-semibold text-sm">
-                    {getGender(employee.gender)} 
+                    {getGender(employee.gender)}
                     {employee.name.split(" ").slice(0, 2).join(" ")}
                     {/* Display total hours */}
                     {!showTooltips && (
@@ -188,7 +205,8 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
             <div className="flex items-center h-[54px] bg-gray-100 border-r border-gray-300 border-t border-b border-l bg-white">
               <span className="text-md font-medium text-gray-600 pl-3">
                 Total: {employees.length}
