@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: scheduler-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: schedulerdb
+    ports:
+      - "5432:5432"
+    depends_on:
+      - frontend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+
+  backend:
+    image: kirmor/employee-scheduling:latest
+    container_name: scheduler-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scheduler-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+      - "5555:5555"
+    env_file:
+      - docker.env
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

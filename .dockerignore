@@ -1,0 +1,21 @@
+# Ignore dependencies and build output
+node_modules
+.pnpm
+.next
+.vercel
+dist
+build
+out
+
+# Ignore VCS & local files
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+*.log
+
+# Ignore environment and editor files
+.env
+.env.local
+.vscode
+.idea
