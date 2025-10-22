@@ -25,4 +25,4 @@ COPY --from=build /app ./
 EXPOSE 3000
 
 # Run migrations then start
-CMD sh -c "npx prisma migrate deploy && pnpm run start"
+CMD sh -c "npx prisma db push && pnpm run start"
