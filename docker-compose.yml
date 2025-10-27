@@ -20,7 +20,7 @@ services:
       - app-network
 
   backend:
-    image: kirmor/employee-scheduling:latest
+    image: kirmor/employee-scheduling:v2
     container_name: scheduler-backend
     restart: always
     ports:
