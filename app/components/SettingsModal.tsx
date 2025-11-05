@@ -33,8 +33,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [importError, setImportError] = useState<string | null>(null); // Added for import errors
   const [employeeName, setEmployeeName] = useState<string>("");
   const [employeeRole, setEmployeeRole] = useState<string>("");
+  const [employeeGender, setEmployeeGender] = useState<string>("Unknown");
   const [createEmployeeStatus, setCreateEmployeeStatus] = useState<string | null>(null);
   const [createEmployeeError, setCreateEmployeeError] = useState<string | null>(null);
+  const [numberEmployeesToSplitAt, setNumberEmployeesToSplitAt] = useState<string>("7");
+  const [hourToSplitAt, setHourToSplitAt] = useState<string>("17");
   const { employees, setEmployees } = useEmployee();
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -134,6 +137,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       days: shiftDays,
       role: selectedRoles,
       isFullDay: isFullDay,
+      numberToSplitAt: numberEmployeesToSplitAt,
+      hourToSplitAt: hourToSplitAt
     };
     setPendingShifts([...pendingShifts, newShift]);
     setActiveShifts([...activeShifts, newShift]);
@@ -159,7 +164,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         const response = await fetch("/api/shifts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete, userId: userId }),
+          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete, userId: userId, numberEmployeesToSplitAt, hourToSplitAt }),
         });
 
         if (!response.ok) {
@@ -238,6 +243,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
             id: new Date().getTime(),
             name: employee.name,
             role: employee.role,
+            gender: employee.gender,
             userId: userId,
             rate: 1.0,
           },
@@ -254,7 +260,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     }
   };
 
-  async function handleCreateEmployee(name: string, role: string) {
+  async function handleCreateEmployee(name: string, role: string, gender: string) {
     setCreating(true);
     setCreateEmployeeStatus(null);
     setCreateEmployeeError(null);
@@ -262,7 +268,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       const response = await fetch("/api/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, name, role }),
+        body: JSON.stringify({ userId, name, role, gender }),
       });
       if (!response.ok) {
         const data = await response.json();
@@ -280,7 +286,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setCreating(false);
       setEmployees((prevEmployees) => [
         ...prevEmployees,
-        { id: new Date().getTime(), name, role, userId, rate: 1.0 },
+        { id: new Date().getTime(), name, role, userId, gender, rate: 1.0 },
       ]);
     }
   }
@@ -514,6 +520,39 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       <span className="text-indigo-600">Full Day</span>
                     </label>
                   </div>
+                  {isFullDay && (
+                    <div className="mb-2 flex justify-center space-x-12">
+                      <div className="grid">
+                        <label htmlFor="employeeSplit">When to split shift?</label>
+                        <input
+                        id="employeeSplit"
+                        type="number"
+                        min="1"
+                        max={employees.length}
+                        value={numberEmployeesToSplitAt}
+                        onChange={(e) => {
+                          setNumberEmployeesToSplitAt(e.target.value);
+                        }}
+                        className="mt-2 p-2 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div className="grid">
+                        <label htmlFor="timeSplit">At what hour to split?</label>
+                        <input
+                        id="timeSplit"
+                        type="number"
+                        min="0"
+                        max="23"
+                        value={hourToSplitAt}
+                        onChange={(e) => {
+                          setHourToSplitAt(e.target.value);
+                        }}
+                        className="mt-2 p-2 border border-gray-300 rounded"
+                      />
+                      </div>
+                    </div>
+                  
+                  )}
 
                   <div className="flex flex-wrap gap-2">
                     {[
@@ -822,9 +861,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
+                  <input
+                    type="text"
+                    placeholder="Gender"
+                    value={employeeGender}
+                    onChange={(e) => {
+                      setEmployeeGender(e.target.value);
+                    }}
+                    className="mt-2 p-2 border border-gray-300 rounded"
+                  />
                   <button
                     type="button"
-                    onClick={() => handleCreateEmployee(employeeName, employeeRole)}
+                    onClick={() => handleCreateEmployee(employeeName, employeeRole, employeeGender)}
                     className={`py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-500 mt-4 ${
                       creating ? "opacity-50 cursor-not-allowed" : ""
                     }`}

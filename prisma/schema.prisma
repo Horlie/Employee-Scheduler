@@ -28,6 +28,7 @@ model Employee {
   userId Int
   user  User    @relation(fields: [userId], references: [id])
   availability EmployeeAvailability[]
+  gender String @default("Unknown")
 }
 
 model EmployeeAvailability {
@@ -50,7 +51,6 @@ model Shift {
   days      String[]
   role      String[]
   isFullDay Boolean  @default(false)
-
   hourToSplitAt   String?
   numberToSplitAt Int?
 }

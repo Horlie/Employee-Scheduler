@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   try {
     await prisma.$connect();
 
-    const { add, delete: deleteIds, userId } = await request.json();
+    const { add, delete: deleteIds, userId, numberEmployeesToSplitAt, hourToSplitAt } = await request.json();
 
     if (!userId || isNaN(parseInt(userId))) {
       return NextResponse.json({ error: "Invalid userId." }, { status: 400 });
@@ -54,6 +54,8 @@ export async function POST(request: Request) {
             days: { set: shift.days },
             role: { set: shift.role },
             userId: parseInt(userId),
+            numberToSplitAt: numberEmployeesToSplitAt,
+            hourToSplitAt: hourToSplitAt
           },
         });
         const shiftString = shift.isFullDay

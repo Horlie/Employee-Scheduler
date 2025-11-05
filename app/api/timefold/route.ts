@@ -3,6 +3,7 @@ import { prisma } from "@/app/lib/prisma";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 import { Employee, EmployeeAvailability, Shift, RoleSettings, User } from "@/app/types/scheduler";
+import { getYear } from "date-fns";
 
 const BACKEND_URL = process.env.BACKEND_URL;
 export const maxDuration = 60;
@@ -161,6 +162,24 @@ function buildTimefoldJson(
   role: string, 
   allEmployees: Employee[]
 ) {
+
+  let map = new Map<Employee, number>;
+  roleEmployees.forEach(
+    (employee) => {
+    const daysInMonth = new Date(new Date().getFullYear(), month, 0).getDate();
+    const vacationDays = employee.availability?.filter(avail =>
+      avail.status === 'vacation' &&
+      new Date(avail.startDate).getMonth() === month
+    ).length ?? 0;
+
+    let adjustedRate = employee.rate;
+    if (vacationDays > 0) {
+      adjustedRate = (daysInMonth - vacationDays) / daysInMonth * employee.rate;
+    }
+    map.set(employee, adjustedRate);
+    });
+  
+
   const timefoldEmployees = roleEmployees
     .filter(
       (employee) => employee.role === role && Math.floor(user.monthlyHours * employee.rate) > 0
@@ -200,7 +219,7 @@ function buildTimefoldJson(
               end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
             }))
         : [],
-      monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * employee.rate) : 160,
+      monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * (map.get(employee)  ?? employee.rate)) : 160,
     }));
 
   const timefoldShifts = generateMonthlyShifts(
@@ -248,12 +267,18 @@ function generateMonthlyShifts(
       dayOfWeek
     ];
     const availableEmployeesCount = employeesInRole.filter(emp => {
-      
       const isUnavailable = emp.availability?.some(avail => {
-        const availDate = new Date(avail.startDate).toDateString();
-        return availDate === date.toDateString() && (avail.status === 'unreachable' || avail.status === 'vacation');
+        const start = new Date(avail.startDate);
+        const finish = new Date(avail.finishDate); 
+        const status = (avail.status ?? "").toLowerCase();
+
+        const isUnavailableStatus = status === "unavailable" || status === "vacation";
+        const isWithinRange = date >= start && date <= finish;
+
+        return isWithinRange && isUnavailableStatus;
       });
-      return !isUnavailable; 
+      
+      return !isUnavailable;
     }).length;
 
     shifts.forEach((shift) => {
@@ -274,12 +299,12 @@ function generateMonthlyShifts(
           for (let i = 0; i < shiftCount; i++) {
             const { startTime, endTime } = getShiftTimes(shift, date);
 
-            const shouldSplitShift = shift.isFullDay && availableEmployeesCount > shiftCount * 2;
+            const shouldSplitShift = shift.isFullDay && availableEmployeesCount >= parseInt(shift.numberToSplitAt);
 
            if (shouldSplitShift) {
               console.log(`Splitting Full Day shift on ${date.toLocaleDateString()} for role '${role}'. Available employees: ${availableEmployeesCount}`);
               
-              const midTime = new Date(startTime.getTime() + 12 * 60 * 60 * 1000);
+              const midTime = new Date(startTime.getTime() + parseInt(shift.hourToSplitAt) * 60 * 60 * 1000);
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,

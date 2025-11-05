@@ -23,6 +23,7 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         roleSettings: {},
+        monthlyHours: 160
         // Add other fields if necessary
       },
     });
