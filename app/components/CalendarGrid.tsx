@@ -332,8 +332,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     if (draggedShift.status === "unavailable") newColor = "bg-yellow-200";
     if (draggedShift.status === "unreachable") newColor = "bg-red-200";
     if (draggedShift.status === "vacation") newColor = "bg-blue-200";
-    if (oldStartDate.toDateString() !== targetDate.toDateString()) {
-      onScheduleChange();
+    if (oldStartDate.toDateString() !== targetDate.toDateString()) {   
     }
     
     const updated = { ...prev };
@@ -341,6 +340,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     updated[newCellKey] = newColor; 
     return updated;
   });
+  onScheduleChange();
     
 
   };
