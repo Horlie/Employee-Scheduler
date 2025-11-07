@@ -137,8 +137,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       days: shiftDays,
       role: selectedRoles,
       isFullDay: isFullDay,
-      numberToSplitAt: numberEmployeesToSplitAt,
-      hourToSplitAt: hourToSplitAt
+      numberToSplitAt: isFullDay ? numberEmployeesToSplitAt : null,
+      hourToSplitAt: isFullDay ? hourToSplitAt : null,
     };
     setPendingShifts([...pendingShifts, newShift]);
     setActiveShifts([...activeShifts, newShift]);
@@ -243,7 +243,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
             id: new Date().getTime(),
             name: employee.name,
             role: employee.role,
-            gender: employee.gender,
+            gender: employee.gender || null,
             userId: userId,
             rate: 1.0,
           },
@@ -286,7 +286,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setCreating(false);
       setEmployees((prevEmployees) => [
         ...prevEmployees,
-        { id: new Date().getTime(), name, role, userId, gender, rate: 1.0 },
+        { id: new Date().getTime(), name, role, userId, gender: gender || null, rate: 1.0 },
       ]);
     }
   }
@@ -861,15 +861,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
-                  <input
-                    type="text"
-                    placeholder="Gender"
+                  <select
                     value={employeeGender}
                     onChange={(e) => {
                       setEmployeeGender(e.target.value);
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
-                  />
+                  >
+                    <option value="" disabled>Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="">Not specified</option>
+                  </select>
                   <button
                     type="button"
                     onClick={() => handleCreateEmployee(employeeName, employeeRole, employeeGender)}
