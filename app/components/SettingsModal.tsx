@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Employee, Shift, RoleSettings } from "../types/scheduler";
 import { useEmployee } from "../context/EmployeeContext";
 import { useRouter } from "next/navigation";
+import { Gender } from "../types/scheduler";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [importError, setImportError] = useState<string | null>(null); // Added for import errors
   const [employeeName, setEmployeeName] = useState<string>();
   const [employeeRole, setEmployeeRole] = useState<string>();
-  const [employeeGender, setEmployeeGender] = useState<string>();
+  const [employeeGender, setEmployeeGender] = useState<Gender>();
   const [createEmployeeStatus, setCreateEmployeeStatus] = useState<string | null>(null);
   const [createEmployeeError, setCreateEmployeeError] = useState<string | null>(null);
   const [numberEmployeesToSplitAt, setNumberEmployeesToSplitAt] = useState<string>("7");
@@ -235,23 +236,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         const data = await response.json();
         throw new Error(data.error || "Failed to import employees.");
       }
-      const data = await response.json();
-      data.employeesToCreate.forEach((employee: Employee) => {
-        setEmployees((prevEmployees) => [
-          ...prevEmployees,
-          {
-            id: new Date().getTime(),
-            name: employee.name,
-            role: employee.role,
-            gender: employee.gender,
-            userId: userId,
-            rate: 1.0,
-          },
-        ]);
-      });
+      const response2 = await fetch(`/api/employees?userId=${JSON.parse(localStorage.getItem("user") ?? "").id}`);
+      if (!response2.ok) {
+        throw new Error(`Failed to fetch employees: ${response2.statusText}`);
+      }
+      const employeesData = await response2.json();
+      
+      let allEmployees = employeesData.employees; 
+      setEmployees(allEmployees);
       setUploadStatus("Employees imported successfully!");
       setSelectedFile(null);
-      router.refresh();
     } catch (error: any) {
       console.error("Import Error:", error);
       setImportError(error.message);
@@ -260,7 +254,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     }
   };
 
-  async function handleCreateEmployee(name: string, role: string, gender: string) {
+  async function handleCreateEmployee(name: string, role: string, gender: Gender) {
     setCreating(true);
     setCreateEmployeeStatus(null);
     setCreateEmployeeError(null);
@@ -284,10 +278,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setCreateEmployeeError("Failed to create employee. Please try again.");
     } finally {
       setCreating(false);
-      setEmployees((prevEmployees) => [
-        ...prevEmployees,
-        { id: new Date().getTime(), name, role, userId, gender, rate: 1.0 },
-      ]);
+      const response2 = await fetch(`/api/employees?userId=${JSON.parse(localStorage.getItem("user") ?? "").id}`);
+      if (!response2.ok) {
+        throw new Error(`Failed to fetch employees: ${response2.statusText}`);
+      }
+      const employeesData = await response2.json();
+      
+      let allEmployees = employeesData.employees; 
+      setEmployees(allEmployees);
     }
   }
 
@@ -846,7 +844,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   <input required
                     type="text"
                     placeholder="Employee Name"
-                    value={employeeName}
+                    value={employeeName ?? ""}
                     onChange={(e) => {
                       setEmployeeName(e.target.value);
                     }}
@@ -855,25 +853,26 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   <input required
                     type="text"
                     placeholder="Role"
-                    value={employeeRole}
+                    value={employeeRole ?? ""}
                     onChange={(e) => {
                       setEmployeeRole(e.target.value);
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
-                  <select required
+                  <select defaultValue={'DEFAULT'}
                     onChange={(e) => {
-                      setEmployeeGender(e.target.value);
+                      setEmployeeGender(e.target.value as Gender);
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   >
-                    <option selected disabled>Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
+                    <option value={"DEFAULT"} disabled>Select Gender</option>
+                    {Object.values(Gender).map(gender => (
+                      <option key={gender} value={gender}>{gender}</option>
+                    ))}
                   </select>
                   <button
                     type="button"
-                    onClick={() => handleCreateEmployee(employeeName ?? "", employeeRole ?? "", employeeGender || "")}
+                    onClick={() => handleCreateEmployee(employeeName ?? "", employeeRole ?? "", employeeGender ?? Gender.PREFER_NOT_TO_SAY)}
                     className={`py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-500 mt-4 ${
                       creating || !employeeGender || !employeeName || !employeeRole ? "opacity-50 cursor-not-allowed" : ""
                     }`}

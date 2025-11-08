@@ -1,13 +1,21 @@
 import { JsonObject } from "@prisma/client/runtime/library";
 
+export enum Gender {
+  MALE = 'Male',
+  FEMALE = 'Female',
+  OTHER = 'Other',
+  PREFER_NOT_TO_SAY = 'Prefer not to say',
+}
+
 export interface Employee {
   id: number; // Changed from string to number
   name: string;
   rate: number;
   role: string;
   availability?: EmployeeAvailability[];
-  gender: string | null;
+  gender: Gender;
 }
+
 
 export interface EmployeeAvailability {
   id: number | string; // может быть строкой ? когда их создает timefold
