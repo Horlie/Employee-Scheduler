@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Shift" ALTER COLUMN "hourToSplitAt" DROP NOT NULL,
+ALTER COLUMN "numberToSplitAt" DROP NOT NULL;

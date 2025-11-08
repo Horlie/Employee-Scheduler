@@ -6,7 +6,7 @@ export interface Employee {
   rate: number;
   role: string;
   availability?: EmployeeAvailability[];
-  gender: string;
+  gender: string | null;
 }
 
 export interface EmployeeAvailability {
@@ -51,8 +51,8 @@ export interface Shift {
   days: string[];
   role: string[];
   isFullDay: boolean;
-  numberToSplitAt: string;
-  hourToSplitAt: string;
+  hourToSplitAt: string | null;
+  numberToSplitAt: string | null;
 }
 
 export interface User {

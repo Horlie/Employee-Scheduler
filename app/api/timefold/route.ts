@@ -52,7 +52,7 @@ export async function POST(req: Request) {
 
       const rolePromises = roles.map(async (role) => {
         // Filter employees by role
-        const roleEmployees = employees.filter((employee: Employee) => employee.role === role);
+        const roleEmployees = employees.filter((employee) => employee.role === role);
 
         // Build TimeFold JSON for the role
         const roleTimefoldJson = buildTimefoldJson(
@@ -156,7 +156,7 @@ export async function GET(req: Request) {
 
 function buildTimefoldJson(
   roleEmployees: Employee[],
-  shifts: Shift[],
+  shifts: any[],
   user: User,
   month: number,
   role: string, 
@@ -298,13 +298,18 @@ function generateMonthlyShifts(
 
           for (let i = 0; i < shiftCount; i++) {
             const { startTime, endTime } = getShiftTimes(shift, date);
+            const splitThresholdString = shift.numberToSplitAt; 
+            const splitHourString = shift.hourToSplitAt;
+            const splitThreshold = splitThresholdString ? parseInt(splitThresholdString, 10) : null;
+            const shouldSplitShift = shift.isFullDay && 
+                                     splitThreshold != null && !isNaN(splitThreshold) &&
+                                     availableEmployeesCount >= splitThreshold;
 
-            const shouldSplitShift = shift.isFullDay && availableEmployeesCount >= parseInt(shift.numberToSplitAt);
+           if (shouldSplitShift && splitHourString) {
+              const splitHour = parseInt(splitHourString.split(':')[0], 10);
 
-           if (shouldSplitShift) {
               console.log(`Splitting Full Day shift on ${date.toLocaleDateString()} for role '${role}'. Available employees: ${availableEmployeesCount}`);
-              
-              const midTime = new Date(startTime.getTime() + parseInt(shift.hourToSplitAt) * 60 * 60 * 1000);
+              const midTime = new Date(startTime.getTime() + splitHour * 60 * 60 * 1000);
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,
