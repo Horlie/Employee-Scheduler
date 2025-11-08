@@ -31,9 +31,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [selectedFile, setSelectedFile] = useState<File | null>(null); // Added for file selection
   const [uploadStatus, setUploadStatus] = useState<string | null>(null); // Added for upload status
   const [importError, setImportError] = useState<string | null>(null); // Added for import errors
-  const [employeeName, setEmployeeName] = useState<string>("");
-  const [employeeRole, setEmployeeRole] = useState<string>("");
-  const [employeeGender, setEmployeeGender] = useState<string>("Unknown");
+  const [employeeName, setEmployeeName] = useState<string>();
+  const [employeeRole, setEmployeeRole] = useState<string>();
+  const [employeeGender, setEmployeeGender] = useState<string>();
   const [createEmployeeStatus, setCreateEmployeeStatus] = useState<string | null>(null);
   const [createEmployeeError, setCreateEmployeeError] = useState<string | null>(null);
   const [numberEmployeesToSplitAt, setNumberEmployeesToSplitAt] = useState<string>("7");
@@ -243,7 +243,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
             id: new Date().getTime(),
             name: employee.name,
             role: employee.role,
-            gender: employee.gender || null,
+            gender: employee.gender,
             userId: userId,
             rate: 1.0,
           },
@@ -286,7 +286,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setCreating(false);
       setEmployees((prevEmployees) => [
         ...prevEmployees,
-        { id: new Date().getTime(), name, role, userId, gender: gender || null, rate: 1.0 },
+        { id: new Date().getTime(), name, role, userId, gender, rate: 1.0 },
       ]);
     }
   }
@@ -843,7 +843,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 {/* Form to create a single employee */}
                 <div className="flex flex-col">
                   <p>Create a single employee.</p>
-                  <input
+                  <input required
                     type="text"
                     placeholder="Employee Name"
                     value={employeeName}
@@ -852,7 +852,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
-                  <input
+                  <input required
                     type="text"
                     placeholder="Role"
                     value={employeeRole}
@@ -861,25 +861,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
-                  <select
-                    value={employeeGender}
+                  <select required
                     onChange={(e) => {
                       setEmployeeGender(e.target.value);
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   >
-                    <option value="" disabled>Select Gender</option>
+                    <option selected disabled>Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    <option value="">Not specified</option>
                   </select>
                   <button
                     type="button"
-                    onClick={() => handleCreateEmployee(employeeName, employeeRole, employeeGender)}
+                    onClick={() => handleCreateEmployee(employeeName ?? "", employeeRole ?? "", employeeGender || "")}
                     className={`py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-500 mt-4 ${
-                      creating ? "opacity-50 cursor-not-allowed" : ""
+                      creating || !employeeGender || !employeeName || !employeeRole ? "opacity-50 cursor-not-allowed" : ""
                     }`}
-                    disabled={creating}
+                    disabled={creating || !employeeGender || !employeeName || !employeeRole}
                   >
                     {creating ? "Creating..." : "Create Employee"}
                   </button>
