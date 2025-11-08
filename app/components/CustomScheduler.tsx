@@ -339,6 +339,10 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         onDownloadClick={handleDownloadPDF}
         isDownloading={isDownloading}
 
+        isDirty={isDirty}
+        onSaveChanges={onSaveChanges}
+        onCancelChanges={onCancelChanges}
+
 
       />
       <div id="scheduler-grid-to-download">

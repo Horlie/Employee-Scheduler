@@ -326,9 +326,9 @@ export default function Schedule() {
     <>
       <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} activePage="schedule" />
       {isLoading && <LoadingSpinner />}
-      <div className="relative flex-grow">
         <div className="overflow-y-auto rounded-2xl border-2 border-gray-300 mt-16 bg-gray-100 overflow-x-auto">
           <CustomScheduler
+            isDirty={isDirty}
             employees={employees}
             cellColors={cellScheduleColors}
             setCellColors={setCellScheduleColors}
@@ -343,27 +343,11 @@ export default function Schedule() {
             needsRefresh={handleRefresh}
             isScheduleFullDay={isFullDay}
             isPlanningFullDay={new Map()}
+            onSaveChanges={handleSaveChanges}
+            onCancelChanges={handleCancelChanges}
             onScheduleChange={handleScheduleChange}
           />
-        </div>
-        {isDirty && (
-          <div className="absolute bottom-5 right-5 z-20 bg-white p-3 rounded-lg shadow-lg flex items-center gap-3">
-            <p className="text-sm text-gray-600 mr-2">You have unsaved changes.</p>
-            <button
-              onClick={handleCancelChanges}
-              className="px-4 py-2 font-semibold bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveChanges}
-              className="px-4 py-2 font-semibold bg-teal-500 text-white rounded-lg shadow-md hover:bg-teal-600"
-            >
-              Save Changes
-            </button>
-          </div>
-        )}
-      </div>
+        </div>      
     </>
   );
 }
