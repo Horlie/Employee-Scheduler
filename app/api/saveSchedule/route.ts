@@ -6,26 +6,27 @@ export async function POST(request: Request) {
 
     const { employeeId, month, data } = await request.json();
     console.log("Saving data to database:", data);
-
     try {
-      const schedule = await prisma.schedule.upsert({
-        where: {
-          userId_month: {
-            userId: employeeId,
-            month: month,
-          },
-        },
-        update: {
-          data: data,
-        },
-        create: {
+      await prisma.timefoldShift.deleteMany({
+        where: { 
           userId: employeeId,
-          month: month,
-          data: data,
-        },
+          month: month
+         },
       });
+      for (const i in Object.keys(data)) {
+        await prisma.timefoldShift.createMany({
+          data: data[Object.keys(data)[i]].shifts.map((shift: { employee: { id: any; }; isFullDay: any; start: string | number | Date; end: string | number | Date; })=> ({
+            userId: employeeId,
+            employeeId: shift.employee.id,
+            isFullDay: shift.isFullDay,
+            start: new Date(shift.start),
+            end: new Date(shift.end),
+            month: month
+          })),
+        });
+      }
 
-      return new Response(JSON.stringify({ success: true, schedule }), { status: 200 });
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
     } catch (error) {
       console.error("Error upserting schedule:", error);
       return new Response(JSON.stringify({ success: false, error: "Failed to save schedule." }), {

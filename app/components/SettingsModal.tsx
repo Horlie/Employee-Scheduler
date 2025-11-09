@@ -136,7 +136,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       startTime: startTime + ":00",
       endTime: endTime + ":00",
       days: shiftDays,
-      role: selectedRoles,
+      roles: selectedRoles,
       isFullDay: isFullDay,
       numberToSplitAt: isFullDay ? numberEmployeesToSplitAt : null,
       hourToSplitAt: isFullDay ? hourToSplitAt : null,
@@ -165,7 +165,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         const response = await fetch("/api/shifts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete, userId: userId, numberEmployeesToSplitAt, hourToSplitAt }),
+          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete, userId: userId, numberEmployeesToSplitAt, hourToSplitAt}),
         });
 
         if (!response.ok) {
@@ -291,7 +291,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
 
   const getUniqueShifts = (role: string): string[] => {
     const shifts = activeShifts
-      .filter((shift) => shift.role.includes(role))
+      .filter((shift) => shift.roles.includes(role))
       .map((shift) =>
         shift.isFullDay
           ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)})`
@@ -670,7 +670,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                   )}
                                 </span>
                                 <div className="flex flex-wrap gap-1 my-1">
-                                  {shift.role.map((role) => (
+                                  {shift.roles.map((role) => (
                                     <span
                                       key={role}
                                       className="px-2 py-1 bg-indigo-200 text-xs rounded"
@@ -731,7 +731,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                   )}
                                 </span>
                                 <div className="flex flex-wrap gap-1 my-1">
-                                  {shift.role.map((role) => (
+                                  {shift.roles.map((role) => (
                                     <span
                                       key={role}
                                       className="px-2 py-1 bg-indigo-200 text-xs rounded"

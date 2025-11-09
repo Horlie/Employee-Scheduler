@@ -16,21 +16,18 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    const schedule = await prisma.schedule.findUnique({
+    const schedule = await prisma.timefoldShift.findMany({
       where: {
-        userId_month: {
-          userId: parseInt(userId),
-          month: parseInt(month),
-        },
+        month: parseInt(month),
+        userId: parseInt(userId),
       },
     });
 
     if (!schedule) {
       return NextResponse.json({}); 
     }
-    console.log("Retrieved data from database:", schedule.data);
 
-    return NextResponse.json(schedule.data);
+    return NextResponse.json(schedule);
   } catch (error) {
     console.error('Error fetching schedule:', error);
     return NextResponse.json(

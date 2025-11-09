@@ -33,14 +33,6 @@ export interface EmployeeAvailability {
   employee?: { name: string, role?: string }; 
 }
 
-// export interface EmployeeAvailability {
-//   id: number;
-//   employeeId: number;
-//   startDate: Date | string;
-//   finishDate: Date | string;
-//   status: string;
-//   isFullDay: boolean;
-// }
 
 export interface SchedulerEvent {
   id: string;
@@ -57,7 +49,7 @@ export interface Shift {
   startTime: string;
   endTime: string;
   days: string[];
-  role: string[];
+  roles: string[];
   isFullDay: boolean;
   hourToSplitAt: string | null;
   numberToSplitAt: string | null;
@@ -87,19 +79,13 @@ export interface RoleSettings {
   };
 }
 
-export interface Schedule {
-  id: number;
-  userId: number;
-  month: number;
-  data: JsonObject;
-}
 
 export interface TimefoldShift {
-  employee: {
-    name: string;
-  };
+  employeeId: number;
   id: string;
   isFullDay: boolean;
   start: string;
   end: string;
+  month: number;
 }
+

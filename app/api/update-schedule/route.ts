@@ -11,42 +11,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid data provided." }, { status: 400 });
     }
     
-    const updatedDataJson = schedule.reduce((acc, shift) => { // преобразовать данные в формат базы данных, проверить есть ли у shift employee.role
-        const role = shift.employee?.role;
-        if (!role) {
-          return acc; // Пропускаем смены без роли
-        }
-
-        if (!acc[role]) {
-          acc[role] = { shifts: [] };
-        }
-        acc[role].shifts.push({ 
-            id: shift.id.toString(), // Timefold ждет ид строкой ?
-            start: new Date(shift.startDate).toISOString(),
-            end: new Date(shift.finishDate).toISOString(),
-            isFullDay: shift.isFullDay || false,
-            employee: { name: shift.employee.name }, 
-        });
-        return acc;
-    }, {} as Record<string, { shifts: any[] }>);
-
-
-    await prisma.schedule.upsert({
-      where: {
-        userId_month: {
-          userId: userId,
-          month: month,
-        },
-      },
-      update: {
-        data: updatedDataJson, // Сохраняем унифицированные данные
-      },
-      create: {
-        userId: userId,
-        month: month,
-        data: updatedDataJson, // Создаем запись с теми же данными, если ее нет
-      },
-    });
+    await prisma.$transaction(
+      schedule.map((shift) =>
+        prisma.timefoldShift.update({
+          where: { id: shift.id },
+          data: {
+            start: new Date(shift.start),
+            end: new Date(shift.end),
+            isFullDay: shift.isFullDay,
+          },
+        })
+      )
+    );
 
     return NextResponse.json({ success: true, message: "Schedule updated successfully." });
 

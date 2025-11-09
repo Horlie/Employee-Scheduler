@@ -42,7 +42,7 @@ export default function Schedule() {
     return employee.id;
   }, []); 
 
-  const parseAndSetScheduleData = useCallback((savedData: any, currentEmployees: Employee[]) => {
+  const parseAndSetScheduleData = useCallback((savedData: TimefoldShift[], currentEmployees: Employee[]) => {
 
     console.log("Parsing data received from DB:", savedData);
     if (!savedData || typeof savedData !== 'object'  || Object.keys(savedData).length === 0) {
@@ -50,13 +50,7 @@ export default function Schedule() {
       setScheduleData([]);
       return;
     }
-    let allShifts: TimefoldShift[] = [];
-    
-    Object.values(savedData).forEach((roleData: any) => {
-      if (roleData && Array.isArray(roleData.shifts)) {
-        allShifts = allShifts.concat(roleData.shifts);
-      }
-    });
+    const allShifts: TimefoldShift[] = savedData;
 
     console.log(`Total shifts found after parsing: ${allShifts.length}`);
 
@@ -68,13 +62,8 @@ export default function Schedule() {
     const fullDayMap = new Map<string | number, boolean>();
     const parsedData = allShifts
       .map((shift: TimefoldShift) => {
-        const employeeName = shift.employee?.name;
-        if (!employeeName) return null;
 
-        const employeeId = getEmployeeIdByName(employeeName, currentEmployees);
-        if (!employeeId) return null; 
-
-        const employee = currentEmployees.find(e => e.id === employeeId);
+        const employee = currentEmployees.find(e => e.id === shift.employeeId);
         const shiftId = shift.id; 
         
 
@@ -82,16 +71,13 @@ export default function Schedule() {
 
         return {
           id: shiftId,
-          employeeId,
+          employeeId: shift.employeeId,
           start: new Date(shift.start),
           end: new Date(shift.end),
           startDate: new Date(shift.start),
           finishDate: new Date(shift.end),
           status: "scheduled",
-          employee: {
-            name: employeeName,
-            role: employee?.role,
-          },
+          employee
         } as EmployeeAvailability;
       })
       .filter((shift): shift is EmployeeAvailability => shift !== null); 
@@ -177,7 +163,6 @@ export default function Schedule() {
       return;
     }
     setIsLoggedIn(true);
-
     const initializePage = async () => {
       setIsLoading(true);
       try {
@@ -205,7 +190,6 @@ export default function Schedule() {
         
         const currentMonth = activeMonth.getMonth() + 1;
         const scheduleResponse = await fetch(`/api/schedules?userId=${parsedUser.id}&month=${currentMonth}`);
-        
         if (scheduleResponse.status === 404) {
           console.log("No schedule found for this month.");
           setScheduleData([]);
@@ -224,56 +208,20 @@ export default function Schedule() {
     };
 
     initializePage();
-  }, [activeMonth, needsRefresh, router, setEmployees, employees, parseAndSetScheduleData]); // Убрали 'employees' из зависимостей
+  }, [activeMonth, needsRefresh, router, setEmployees, employees, parseAndSetScheduleData]); 
   
-  const fetchScheduleData = async () => {
-    try {
-      const parsedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const userId = parsedUser.id;
-      const currentMonth = activeMonth.getMonth() + 1;
-      
-      // Fetch from the schedules API instead of timefold
-      const response = await fetch(`/api/schedules?userId=${userId}&month=${currentMonth}`);
-      
-        if (response.status === 404) {
-          // No schedule exists for this month yet
-          console.log("No schedule found for this month");
-          setScheduleData([]);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch schedule data');
-        }
-        
-        const data = await response.json();
-        parseAndSetScheduleData(data, employees);
-      } catch (error) {
-        console.error("Error fetching schedule data:", error);
-        setScheduleData([]);
-      } finally {
-        setIsLoading(false);
-    }
-  };
-
 
   const handleSaveChanges = async () => {
     setIsLoading(true);
     try {
-      const validSchedule = scheduleData.filter(s => typeof s.id === "number" && s.id > 0);
-      const normalizedSchedule = scheduleData.map(s => ({
-        ...s,
-        startDate: typeof s.startDate === "string" ? s.startDate : s.startDate.toISOString(),
-        finishDate: typeof s.finishDate === "string" ? s.finishDate : s.finishDate.toISOString(),
-        start: typeof s.start === "string" ? s.start : s.start?.toISOString?.(),
-        end: typeof s.end === "string" ? s.end : s.end?.toISOString?.(),
-      }));
+      const changedSchedule = scheduleData.filter(
+        (item, i) => JSON.stringify(item) !== JSON.stringify(originalScheduleData[i])
+      );
       const response = await fetch('/api/update-schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          schedule: normalizedSchedule,
+          schedule: changedSchedule,
           userId: JSON.parse(localStorage.getItem("user") || "{}").id,
           month: activeMonth.getMonth() + 1,
         }),
@@ -283,7 +231,7 @@ export default function Schedule() {
         throw new Error('Failed to save changes to the server.');
       }
       
-      console.log("Saving scheduleData:", normalizedSchedule);
+      console.log("Saving scheduleData:", changedSchedule);
 
     } catch (error) {
       console.error(error);
