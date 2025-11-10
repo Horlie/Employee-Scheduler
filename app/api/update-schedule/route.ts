@@ -12,17 +12,26 @@ export async function POST(request: NextRequest) {
     }
     
     await prisma.$transaction(
-      schedule.map((shift) =>
-        prisma.timefoldShift.update({
-          where: { id: shift.id },
-          data: {
-            start: new Date(shift.start),
-            end: new Date(shift.end),
-            isFullDay: shift.isFullDay,
-          },
-        })
-      )
-    );
+    schedule.map((shift) =>
+      prisma.timefoldShift.upsert({
+        where: { id: shift.id },
+        update: {
+          start: new Date(shift.start),
+          end: new Date(shift.end),
+          isFullDay: shift.isFullDay,
+        },
+        create: {
+          start: new Date(shift.start),
+          end: new Date(shift.end),
+          isFullDay: shift.isFullDay,
+          month: month,
+          userId: userId,
+          employeeId: shift.employeeId
+        },
+      })
+    )
+);
+
 
     return NextResponse.json({ success: true, message: "Schedule updated successfully." });
 

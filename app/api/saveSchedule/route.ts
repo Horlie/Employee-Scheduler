@@ -17,7 +17,7 @@ export async function POST(request: Request) {
         await prisma.timefoldShift.createMany({
           data: data[Object.keys(data)[i]].shifts.map((shift: { employee: { id: any; }; isFullDay: any; start: string | number | Date; end: string | number | Date; })=> ({
             userId: employeeId,
-            employeeId: shift.employee.id,
+            employeeId: parseInt(shift.employee.id),
             isFullDay: shift.isFullDay,
             start: new Date(shift.start),
             end: new Date(shift.end),

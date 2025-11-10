@@ -61,6 +61,7 @@ export async function POST(request: Request) {
       where: {
         name: name,
         userId: parseInt(userId),
+        gender
       },
     });
 
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
       employee = await prisma.employee.update({
         where: { id: existingEmployee.id },
         data: {
-          role,
+          role: role.toUpperCase(),
           gender
         },
       });
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
       employee = await prisma.employee.create({
         data: {
           name,
-          role,
+          role: role.toUpperCase(),
           userId: parseInt(userId),
           gender
         },
