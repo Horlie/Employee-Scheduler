@@ -136,6 +136,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       ...prev,
       [cellKey]: "bg-purple-100",
     }))
+    if (shiftToSave) isScheduleFullDay.set(shiftToSave.id, true);
     onScheduleChange();
   };
 
@@ -619,7 +620,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               onSave={handleSaveShift}
               onDelete={handleDeleteShift}
               onClose={handleCloseTooltip}
-              position={tooltipPosition}           
+              position={tooltipPosition}   
             />
           </div>
         )}

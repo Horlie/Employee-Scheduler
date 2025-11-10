@@ -17,6 +17,16 @@ const formatDateToTime = (date: Date): string => {
   return `${hours}:${minutes}`;
 };
 
+const isOneDayApartByDate = (startDate: Date, endDate: Date) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  
+  const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+  return diffDays === 1;
+};
+
 export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
   shift,
   date,
@@ -36,7 +46,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
       const finishDate = new Date(shift.finishDate);
       setStartTime(formatDateToTime(startDate));
       setEndTime(formatDateToTime(finishDate));
-      setIsFullDay(shift.isFullDay ?? false);
+      setIsFullDay(isOneDayApartByDate(new Date(shift.startDate), new Date(shift.finishDate)) ? true : false);
     } else {
       // Reset to default for new shift
       setStartTime('09:00');
@@ -48,13 +58,8 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
   const handleFullDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setIsFullDay(checked);
-    if (checked) {
-      setStartTime('00:00');
-      setEndTime('23:59');
-    } else {
-        setStartTime('09:00');
-        setEndTime('17:00');
-    }
+    setStartTime('09:00');
+    setEndTime(startTime);
   };
 
   const handleSave = useCallback(() => {
@@ -63,9 +68,10 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
 
     const newStartDate = new Date(date);
     newStartDate.setHours(startHour, startMinute, 0, 0);
-
     const newFinishDate = new Date(date);
+    console.log(newFinishDate);
     newFinishDate.setHours(endHour, endMinute, 0, 0);
+    console.log(newFinishDate);
     
     // Handle overnight shifts
     if (newFinishDate <= newStartDate) {
@@ -138,7 +144,6 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
                 id="start-time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                disabled={isFullDay}
                 className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
               />
             </div>
@@ -149,7 +154,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
               <input
                 type="time"
                 id="end-time"
-                value={endTime}
+                value={isFullDay ? startTime : endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 disabled={isFullDay}
                 className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
