@@ -5,6 +5,7 @@ import { Employee, Shift, RoleSettings } from "../types/scheduler";
 import { useEmployee } from "../context/EmployeeContext";
 import { useRouter } from "next/navigation";
 import { useTranslation } from 'react-i18next';
+import { Gender } from "../types/scheduler";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -32,9 +33,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [selectedFile, setSelectedFile] = useState<File | null>(null); // Added for file selection
   const [uploadStatus, setUploadStatus] = useState<string | null>(null); // Added for upload status
   const [importError, setImportError] = useState<string | null>(null); // Added for import errors
-  const [employeeName, setEmployeeName] = useState<string>("");
-  const [employeeRole, setEmployeeRole] = useState<string>("");
-  const [employeeGender, setEmployeeGender] = useState<string>("Unknown");
+  const [employeeName, setEmployeeName] = useState<string>();
+  const [employeeRole, setEmployeeRole] = useState<string>();
+  const [employeeGender, setEmployeeGender] = useState<Gender>();
   const [createEmployeeStatus, setCreateEmployeeStatus] = useState<string | null>(null);
   const [createEmployeeError, setCreateEmployeeError] = useState<string | null>(null);
   const [numberEmployeesToSplitAt, setNumberEmployeesToSplitAt] = useState<string>("7");
@@ -137,10 +138,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       startTime: startTime + ":00",
       endTime: endTime + ":00",
       days: shiftDays,
-      role: selectedRoles,
+      roles: selectedRoles,
       isFullDay: isFullDay,
-      numberToSplitAt: numberEmployeesToSplitAt,
-      hourToSplitAt: hourToSplitAt
+      numberToSplitAt: isFullDay ? numberEmployeesToSplitAt : null,
+      hourToSplitAt: isFullDay ? hourToSplitAt : null,
     };
     setPendingShifts([...pendingShifts, newShift]);
     setActiveShifts([...activeShifts, newShift]);
@@ -166,7 +167,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         const response = await fetch("/api/shifts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete, userId: userId, numberEmployeesToSplitAt, hourToSplitAt }),
+          body: JSON.stringify({ add: pendingShifts, delete: shiftsToDelete, userId: userId, numberEmployeesToSplitAt, hourToSplitAt}),
         });
 
         if (!response.ok) {
@@ -252,8 +253,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         ]);
       });
       setUploadStatus(t('status.import_success'));
+      const response2 = await fetch(`/api/employees?userId=${JSON.parse(localStorage.getItem("user") ?? "").id}`);
+      if (!response2.ok) {
+        throw new Error(`Failed to fetch employees: ${response2.statusText}`);
+      }
+      const employeesData = await response2.json();
+      
+      let allEmployees = employeesData.employees; 
+      setEmployees(allEmployees);
+      setUploadStatus("Employees imported successfully!");
       setSelectedFile(null);
-      router.refresh();
     } catch (error: any) {
       console.error("Import Error:", error);
       setImportError(error.message);
@@ -262,7 +271,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     }
   };
 
-  async function handleCreateEmployee(name: string, role: string, gender: string) {
+  async function handleCreateEmployee(name: string, role: string, gender: Gender) {
     setCreating(true);
     setCreateEmployeeStatus(null);
     setCreateEmployeeError(null);
@@ -286,16 +295,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setCreateEmployeeError(t('errors.create_employee_failed'));
     } finally {
       setCreating(false);
-      setEmployees((prevEmployees) => [
-        ...prevEmployees,
-        { id: new Date().getTime(), name, role, userId, gender, rate: 1.0 },
-      ]);
+      const response2 = await fetch(`/api/employees?userId=${JSON.parse(localStorage.getItem("user") ?? "").id}`);
+      if (!response2.ok) {
+        throw new Error(`Failed to fetch employees: ${response2.statusText}`);
+      }
+      const employeesData = await response2.json();
+      
+      let allEmployees = employeesData.employees; 
+      setEmployees(allEmployees);
     }
   }
 
   const getUniqueShifts = (role: string): string[] => {
     const shifts = activeShifts
-      .filter((shift) => shift.role.includes(role))
+      .filter((shift) => shift.roles.includes(role))
       .map((shift) =>
         shift.isFullDay
           ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)})`
@@ -679,7 +692,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                   )}
                                 </span>
                                 <div className="flex flex-wrap gap-1 my-1">
-                                  {shift.role.map((role) => (
+                                  {shift.roles.map((role) => (
                                     <span
                                       key={role}
                                       className="px-2 py-1 bg-indigo-200 text-xs rounded"
@@ -738,7 +751,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                   )}
                                 </span>
                                 <div className="flex flex-wrap gap-1 my-1">
-                                  {shift.role.map((role) => (
+                                  {shift.roles.map((role) => (
                                     <span
                                       key={role}
                                       className="px-2 py-1 bg-indigo-200 text-xs rounded"
@@ -852,15 +865,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     type="text"
                     placeholder={t('settings_tab.employee_name')}
                     value={employeeName}
+                  <p>Create a single employee.</p>
+                  <input required
+                    type="text"
+                    placeholder="Employee Name"
+                    value={employeeName ?? ""}
                     onChange={(e) => {
                       setEmployeeName(e.target.value);
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
-                  <input
+                  <input required
                     type="text"
                     placeholder={t('settings_tab.employee_role')}
                     value={employeeRole}
+                    placeholder="Role"
+                    value={employeeRole ?? ""}
                     onChange={(e) => {
                       setEmployeeRole(e.target.value);
                     }}
@@ -868,8 +888,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   />
                   <select
                     value={employeeGender}
+                  <select defaultValue={'DEFAULT'}
                     onChange={(e) => {
-                      setEmployeeGender(e.target.value);
+                      setEmployeeGender(e.target.value as Gender);
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   >
@@ -877,14 +898,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   <option value="male">{t('settings_tab.male')}</option>
                   <option value="female">{t('settings_tab.female')}</option>
                   <option value="">{t('settings_tab.not_specified')}</option>
+                    <option value={"DEFAULT"} disabled>Select Gender</option>
+                    {Object.values(Gender).map(gender => (
+                      <option key={gender} value={gender}>{gender}</option>
+                    ))}
                   </select>
                   <button
                     type="button"
-                    onClick={() => handleCreateEmployee(employeeName, employeeRole, employeeGender)}
+                    onClick={() => handleCreateEmployee(employeeName ?? "", employeeRole ?? "", employeeGender ?? Gender.PREFER_NOT_TO_SAY)}
                     className={`py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-500 mt-4 ${
-                      creating ? "opacity-50 cursor-not-allowed" : ""
+                      creating || !employeeGender || !employeeName || !employeeRole ? "opacity-50 cursor-not-allowed" : ""
                     }`}
-                    disabled={creating}
+                    disabled={creating || !employeeGender || !employeeName || !employeeRole}
                   >
                     {creating ? t('settings_tab.creating_employee') : t('settings_tab.create_employee')}
                   </button>

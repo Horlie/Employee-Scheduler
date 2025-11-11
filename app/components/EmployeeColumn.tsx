@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, type JSX } from "react";
-import { Employee } from "../types/scheduler";
+import React, { useState, useEffect, useCallback, useRef, type JSX } from "react";
+import { Employee, Gender } from "../types/scheduler";
 import RateToolTip from "./RateToolTip";
 import { useEmployee } from "../context/EmployeeContext";
 
@@ -10,6 +10,7 @@ interface EmployeeColumnProps {
   hoveredEmployee: string | null;
   showTooltips: boolean;
   employeeHours: Record<number, Map<number, number>>;
+  onEditClick: (employee: Employee) => void;
 }
 
 const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
@@ -19,6 +20,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
   hoveredEmployee,
   showTooltips,
   employeeHours, // Destructure the new prop
+  onEditClick
 }) => {
   const [tooltipEmployeeId, setTooltipEmployeeId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
@@ -32,14 +34,14 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
       )
     );
   };
-  const getGender = (gender: string | null | undefined): string => {
+  const getGender = (gender: Gender): string => {
     if (!gender) {
       return ""; 
     }
-    switch (gender.toLowerCase()) {
-      case 'male':
+    switch (gender) {
+      case Gender.MALE:
         return 'Mr. ';
-      case 'female':
+      case Gender.FEMALE:
         return 'Ms. ';
       default:
         return ''; 
@@ -195,6 +197,12 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                       ref={dropdownRef} // Attach the ref to the dropdown
                       className="absolute right-2 top-0 mt-2 w-24 bg-white border rounded shadow z-50"
                     >
+                      <button
+                        onClick={() => onEditClick(employee)}
+                        className="block px-4 py-2 text-left w-full hover:bg-gray-100"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => handleDelete(employee.id.toString())}
                         className="block px-4 py-2 text-left w-full hover:bg-gray-100 text-red-500"

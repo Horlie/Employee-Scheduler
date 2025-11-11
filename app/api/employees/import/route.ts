@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Prepare data for insertion
     const employeesToCreate = records.map((record: any) => ({
       name: record[0],
-      role: record[1],
+      role: record[1].toUpperCase(),
       gender: record[2],
       userId: Number(userId),
 

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { Gender } from "@/app/types/scheduler";
 
 import { Employee, EmployeeAvailability, Shift, RoleSettings, User } from "@/app/types/scheduler";
-import { getYear } from "date-fns";
 
 const BACKEND_URL = process.env.BACKEND_URL;
 export const maxDuration = 60;
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     try {
       // Fetch employees with their availabilities and roles
       // Fetch all employees with their user information
-      const employees = await prisma.employee.findMany({
+      const employeesFromDb = await prisma.employee.findMany({
         where: {
           user: {
             id: employeeId,
@@ -49,6 +49,10 @@ export async function POST(req: Request) {
 
       // Get all roles from user settings
       const roles = Object.keys(user?.roleSettings || {});
+      const employees: (Employee & {  gender: Gender })[] = employeesFromDb.map(emp => ({
+        ...emp,
+        gender: emp.gender as Gender,
+      }));
 
       const rolePromises = roles.map(async (role) => {
         // Filter employees by role
@@ -56,13 +60,12 @@ export async function POST(req: Request) {
 
         // Build TimeFold JSON for the role
         const roleTimefoldJson = buildTimefoldJson(
-          roleEmployees,
+          roleEmployees as Employee[],
           shifts,
           user as User,
           month,
           role, 
-          employees
-          
+          employees as Employee[]
         );
 
         // Send POST request to BACKEND_URL/schedules for the role
@@ -119,44 +122,10 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
-  try {
-    await prisma.$connect();
-
-    const url = new URL(req.url);
-    const userId = url.searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId parameter." }, { status: 400 });
-    }
-
-    try {
-      const schedule = await prisma.schedule.findMany({
-        where: {
-          userId: parseInt(userId),
-        },
-      });
-
-      if (!schedule) {
-        return NextResponse.json({ error: "Schedule not found." }, { status: 404 });
-      }
-
-      return NextResponse.json(schedule);
-    } catch (error) {
-      console.error("Error fetching schedule:", error);
-      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-    } finally {
-      await prisma.$disconnect();
-    }
-  } catch (error) {
-    console.error("Error fetching schedule:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
 
 function buildTimefoldJson(
   roleEmployees: Employee[],
-  shifts: Shift[],
+  shifts: any[],
   user: User,
   month: number,
   role: string, 
@@ -184,7 +153,8 @@ function buildTimefoldJson(
     .filter(
       (employee) => employee.role === role && Math.floor(user.monthlyHours * employee.rate) > 0
     ) // Filter employees by role
-    .map((employee: Employee) => ({
+    .map((employee: Employee) => ({ 
+      id: employee.id,
       name: employee.name,
       skills: [employee.role],
       vacationIntervals: employee.availability
@@ -282,9 +252,9 @@ function generateMonthlyShifts(
     }).length;
 
     shifts.forEach((shift) => {
-      if (shift.days.includes(dayName) && shift.role.includes(role)) {
+      if (shift.days.includes(dayName) && shift.roles.includes(role)) {
         // Filter shifts by role
-        shift.role.forEach((shiftRole) => {
+        shift.roles.forEach((shiftRole) => {
           if (shiftRole !== role) return; // Only process the current role
 
           const shiftString = shift.isFullDay
@@ -298,13 +268,18 @@ function generateMonthlyShifts(
 
           for (let i = 0; i < shiftCount; i++) {
             const { startTime, endTime } = getShiftTimes(shift, date);
+            const splitThresholdString = shift.numberToSplitAt; 
+            const splitHourString = shift.hourToSplitAt;
+            const splitThreshold = splitThresholdString ? parseInt(splitThresholdString, 10) : null;
+            const shouldSplitShift = shift.isFullDay && 
+                                     splitThreshold != null && !isNaN(splitThreshold) &&
+                                     availableEmployeesCount >= splitThreshold;
 
-            const shouldSplitShift = shift.isFullDay && availableEmployeesCount >= parseInt(shift.numberToSplitAt);
+           if (shouldSplitShift && splitHourString) {
+              const splitHour = parseInt(splitHourString.split(':')[0], 10);
 
-           if (shouldSplitShift) {
               console.log(`Splitting Full Day shift on ${date.toLocaleDateString()} for role '${role}'. Available employees: ${availableEmployeesCount}`);
-              
-              const midTime = new Date(startTime.getTime() + parseInt(shift.hourToSplitAt) * 60 * 60 * 1000);
+              const midTime = new Date(startTime.getTime() + splitHour * 60 * 60 * 1000);
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,

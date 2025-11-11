@@ -45,14 +45,13 @@ export async function POST(request: Request) {
             { status: 404 }
           );
         }
-
         await prisma.shift.create({
           data: {
             startTime: shift.startTime,
             endTime: shift.endTime,
             isFullDay: shift.isFullDay,
             days: { set: shift.days },
-            role: { set: shift.role },
+            roles: { set: shift.roles },
             userId: parseInt(userId),
             numberToSplitAt: numberEmployeesToSplitAt,
             hourToSplitAt: hourToSplitAt
@@ -64,7 +63,7 @@ export async function POST(request: Request) {
 
         
         let json = "{";
-        for (const role of shift.role) {
+        for (const role of shift.roles) {
             json += 
             `"${role}":{
               "${shiftString}":{

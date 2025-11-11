@@ -8,27 +8,28 @@ datasource db {
 }
 
 model User {
-  id        Int        @id @default(autoincrement())
-  email     String     @unique
-  password  String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  employees Employee[]
-  shifts    Shift[]
-  schedules Schedule[]
-  monthlyHours Int?
-  roleSettings Json?
+  id            Int             @id @default(autoincrement())
+  email         String          @unique
+  password      String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  employees     Employee[]
+  shifts        Shift[]
+  monthlyHours  Int?
+  roleSettings  Json?
+  TimefoldShift TimefoldShift[]
 }
 
 model Employee {
-  id    Int     @id @default(autoincrement()) @unique
-  name  String
-  role  String
-  rate  Float   @default(1.0)
-  userId Int
-  user  User    @relation(fields: [userId], references: [id])
-  availability EmployeeAvailability[]
-  gender String @default("Unknown")
+  id             Int                    @id @default(autoincrement())
+  name           String
+  role           String
+  rate           Float                  @default(1.0)
+  gender         String                 @default("Unknown")
+  userId         Int
+  user           User                   @relation(fields: [userId], references: [id])
+  availability   EmployeeAvailability[]
+  timefoldShifts TimefoldShift[]
 }
 
 model EmployeeAvailability {
@@ -37,30 +38,34 @@ model EmployeeAvailability {
   employee   Employee @relation(fields: [employeeId], references: [id])
   startDate  DateTime
   finishDate DateTime
-  status     String   // Can be 'unavailable', 'unreachable', or 'preferable'
+  status     String // 'unavailable', 'unreachable', 'preferable'
   isFullDay  Boolean  @default(false)
+
   @@unique([employeeId, startDate])
 }
 
 model Shift {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    Int
-  startTime String
-  endTime   String
-  days      String[]
-  role      String[]
-  isFullDay Boolean  @default(false)
-  numberToSplitAt String
-  hourToSplitAt String
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  startTime       String
+  endTime         String
+  days            String[]
+  roles           String[]
+  isFullDay       Boolean  @default(false)
+  hourToSplitAt   String?
+  numberToSplitAt String?
 }
 
-model Schedule {
-  id Int @id @default(autoincrement())
-  userId Int
-  user User @relation(fields: [userId], references: [id])
-  month Int
-  data Json
 
-  @@unique([userId, month], name: "userId_month") // Defines a composite unique constraint on userId and month
+model TimefoldShift {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  employeeId Int
+  user       User     @relation(fields: [userId], references: [id])
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  isFullDay  Boolean
+  start      DateTime
+  end        DateTime
+  month      Int
 }

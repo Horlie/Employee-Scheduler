@@ -6,6 +6,7 @@ import EmployeeEventTooltip from "./EmployeeEventTooltip";
 
 import { DndContext, DragEndEvent, useDroppable } from '@dnd-kit/core';
 import { DraggableShift } from './DraggableShift';
+import { ShiftTooltip } from "./ShiftTooltip";
 
 interface CalendarGridProps {
   groupedEmployees: [string, Employee[]][];
@@ -61,12 +62,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   showTooltips,
   isScheduleFullDay,
   isPlanningFullDay,
-  onScheduleChange,
+  onScheduleChange
 }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const [selectedCell, setSelectedCell] = useState<EmployeeAvailability | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -81,6 +83,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     };
   }, []);
 
+  const findShiftForDay = (employeeId: number, date: Date): EmployeeAvailability | null => {
+    return scheduleData.find(s =>
+      s.employeeId === employeeId &&
+      new Date(s.startDate).toDateString() === date.toDateString()
+    ) ?? null;
+  };
+
   const handleCellClick = (
     employee: Employee,
     date: Date,
@@ -93,14 +102,47 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     setSelectedEmployee(employee);
     setSelectedDate(date);
     setTooltipPosition({
-      top: rect.top + scrollTop,
+      top: rect.top + scrollTop + 20,
       left: rect.left + scrollLeft + rect.width / 2,
     });
+    const existingShift = findShiftForDay(employee.id, date);
+    setSelectedCell(existingShift);
   };
 
   const handleCloseTooltip = () => {
+    setSelectedCell(null);
     setSelectedEmployee(null);
     setSelectedDate(null);
+  };
+
+  const handleSaveShift = (shiftToSave: EmployeeAvailability) => {
+    setScheduleData(prevShifts => {
+      const index = prevShifts.findIndex(s => s.id === shiftToSave.id);
+      if (index > -1) {
+        const newShifts = [...prevShifts];
+        newShifts[index] = shiftToSave;
+        return newShifts;
+      }
+      return [...prevShifts, shiftToSave];
+    });
+    handleCloseTooltip();
+  
+    console.log(shiftToSave);
+    handleCloseTooltip();
+    const cellKey = `${shiftToSave.employeeId}-${
+      fromZonedTime(shiftToSave.startDate, "UTC").toISOString().split("T")[0]
+    }`;
+    setCellColors(prev => ({
+      ...prev,
+      [cellKey]: "bg-purple-100",
+    }))
+    if (shiftToSave) isScheduleFullDay.set(shiftToSave.id, true);
+    onScheduleChange();
+  };
+
+  const handleDeleteShift = (shiftId: number | string) => {
+    setScheduleData(prevScheduleData => prevScheduleData.filter(s => s.id !== shiftId));
+    handleCloseTooltip();
   };
 
   const handleAction = async (
@@ -332,8 +374,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     if (draggedShift.status === "unavailable") newColor = "bg-yellow-200";
     if (draggedShift.status === "unreachable") newColor = "bg-red-200";
     if (draggedShift.status === "vacation") newColor = "bg-blue-200";
-    if (oldStartDate.toDateString() !== targetDate.toDateString()) {
-      onScheduleChange();
+    if (oldStartDate.toDateString() !== targetDate.toDateString()) {   
     }
     
     const updated = { ...prev };
@@ -341,6 +382,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     updated[newCellKey] = newColor; 
     return updated;
   });
+  onScheduleChange();
     
 
   };
@@ -348,7 +390,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   
 
   const renderDayHeaders = (currentGroup: string) => (
-    <div className="flex bg-gray-100 sticky top-0 z-10">
+    <div className="flex bg-gray-100 sticky top-0 z-2">
       {days.map((day, index) => (
         <React.Fragment key={index}>
           {day.getDay() === 1 && (
@@ -395,7 +437,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   );
 
   const renderDayFooter = (currentGroup: string) => (
-    <div className="flex bg-gray-100 sticky bottom-0 z-10">
+    <div className="flex bg-gray-100 sticky bottom-0 z-2">
       {days.map((day, index) => (
         <React.Fragment key={index}>
           {day.getDay() === 1 && (
@@ -469,7 +511,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       <DroppableCell employee={employee} day={day}>
         <div
           className={`flex-shrink-0 border-r border-b border-gray-300 ${cellColor} ${
-            isHovered ? "z-[49]" : ""
+            isHovered ? "relative z-[3]" : ""
           }`}
           style={{
             width: `${cellWidth}px`,
@@ -566,6 +608,19 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               date={selectedDate}
               onAction={handleAction}
               position={tooltipPosition}
+            />
+          </div>
+        )}
+        {selectedEmployee && selectedDate && window.location.pathname == "/schedule" && (
+          <div ref={tooltipRef}>
+            <ShiftTooltip             
+              shift={selectedCell ?? null}
+              date={selectedDate}
+              employeeId={selectedEmployee.id}
+              onSave={handleSaveShift}
+              onDelete={handleDeleteShift}
+              onClose={handleCloseTooltip}
+              position={tooltipPosition}   
             />
           </div>
         )}

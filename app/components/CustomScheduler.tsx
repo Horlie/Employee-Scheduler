@@ -6,6 +6,7 @@ import SchedulerHeader from "./SchedulerHeader";
 import EmployeeColumn from "./EmployeeColumn";
 import CalendarGrid from "./CalendarGrid";
 import SettingsModal from "./SettingsModal";
+import EditEmployeeModal from "./EditEmployeeModal";
 import LoadingSpinner from "./LoadingSpinner";
 import { useEmployee } from "../context/EmployeeContext";
 
@@ -75,6 +76,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   onSaveChanges = () => {},
   onCancelChanges = () => {},
   onScheduleChange = () => {},
+  
 
 }) => {
   const [cellWidth, setCellWidth] = useState(50);
@@ -85,6 +87,46 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const { setEmployees } = useEmployee();
+
+  const handleEditClick = useCallback((employee: Employee) => {
+    setEditingEmployee(employee);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+    setEditingEmployee(null);
+  }, []);
+
+  const handleEdit = async (employee: Employee) => {
+    try {
+    const response = await fetch(`/api/employees?id=${employee.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(employee)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to edit employee");
+    }
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleSaveEmployee = useCallback((updatedEmployee: Employee) => {
+      setEmployees(prevEmployees =>
+      prevEmployees.map(emp =>
+        emp.id === updatedEmployee.id ? updatedEmployee : emp
+      )
+    );
+    handleEdit(updatedEmployee);
+  }, []);
   
   
   const [isDownloading, setIsDownloading] = useState(false);
@@ -339,6 +381,10 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
         onDownloadClick={handleDownloadPDF}
         isDownloading={isDownloading}
 
+        isDirty={isDirty}
+        onSaveChanges={onSaveChanges}
+        onCancelChanges={onCancelChanges}
+
 
       />
       <div id="scheduler-grid-to-download">
@@ -349,6 +395,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
               renderGroupSeparator={renderGroupSeparator}
               renderSearchBar={renderSearchBar}
               hoveredEmployee={hoveredEmployee}
+              onEditClick={handleEditClick}
               showTooltips={showTooltips}
               employeeHours={employeeHours} // Pass the prop
             />
@@ -382,6 +429,12 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
       
       {loading && <LoadingSpinner />}
       <SettingsModal isOpen={isSettingsModalOpen} onClose={handleSettingsClose} roles={roles} />
+      <EditEmployeeModal
+        isOpen={isModalOpen}
+        employee={editingEmployee}
+        onClose={handleCloseModal}
+        onSave={handleSaveEmployee}
+        />
     </div>
   );
 };

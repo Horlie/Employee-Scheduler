@@ -55,12 +55,13 @@ export async function POST(request: Request) {
   try {
     await prisma.$connect();
 
-    const { name, role, userId } = await request.json();
+    const { name, role, userId, gender } = await request.json();
 
     const existingEmployee = await prisma.employee.findFirst({
       where: {
         name: name,
         userId: parseInt(userId),
+        gender
       },
     });
 
@@ -69,15 +70,17 @@ export async function POST(request: Request) {
       employee = await prisma.employee.update({
         where: { id: existingEmployee.id },
         data: {
-          role,
+          role: role.toUpperCase(),
+          gender
         },
       });
     } else {
       employee = await prisma.employee.create({
         data: {
           name,
-          role,
+          role: role.toUpperCase(),
           userId: parseInt(userId),
+          gender
         },
       });
     }
@@ -88,4 +91,37 @@ export async function POST(request: Request) {
   } finally {
     await prisma.$disconnect();
   }
+
+}
+
+export async function PUT(request: Request) {
+  try {
+    await prisma.$connect();
+
+    const response = await request.json();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    console.log(response);
+
+    if (!id) {
+      return NextResponse.json({ error: "Employee ID is required" }, { status: 400 });
+    }
+
+    let newEmployee = await prisma.employee.update({
+      where: { id: response.id },
+      data: {
+        name: response.name,
+        role: response.role,
+        gender: response.gender
+      },
+    });
+    return NextResponse.json({ message: "Employee deleted successfully" });
+  }
+  catch (error) {
+    console.error("Error modifying employee:", error);
+    return NextResponse.json({ error: "Failed to modify employee" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+  
 }

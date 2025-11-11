@@ -1,13 +1,21 @@
 import { JsonObject } from "@prisma/client/runtime/library";
 
+export enum Gender {
+  MALE = 'Male',
+  FEMALE = 'Female',
+  OTHER = 'Other',
+  PREFER_NOT_TO_SAY = 'Prefer not to say',
+}
+
 export interface Employee {
   id: number; // Changed from string to number
   name: string;
   rate: number;
   role: string;
   availability?: EmployeeAvailability[];
-  gender: string;
+  gender: Gender;
 }
+
 
 export interface EmployeeAvailability {
   id: number | string; // может быть строкой ? когда их создает timefold
@@ -25,14 +33,6 @@ export interface EmployeeAvailability {
   employee?: { name: string, role?: string }; 
 }
 
-// export interface EmployeeAvailability {
-//   id: number;
-//   employeeId: number;
-//   startDate: Date | string;
-//   finishDate: Date | string;
-//   status: string;
-//   isFullDay: boolean;
-// }
 
 export interface SchedulerEvent {
   id: string;
@@ -49,10 +49,10 @@ export interface Shift {
   startTime: string;
   endTime: string;
   days: string[];
-  role: string[];
+  roles: string[];
   isFullDay: boolean;
-  numberToSplitAt: string;
-  hourToSplitAt: string;
+  hourToSplitAt: string | null;
+  numberToSplitAt: string | null;
 }
 
 export interface User {
@@ -79,19 +79,13 @@ export interface RoleSettings {
   };
 }
 
-export interface Schedule {
-  id: number;
-  userId: number;
-  month: number;
-  data: JsonObject;
-}
 
 export interface TimefoldShift {
-  employee: {
-    name: string;
-  };
+  employeeId: number;
   id: string;
   isFullDay: boolean;
   start: string;
   end: string;
+  month: number;
 }
+
