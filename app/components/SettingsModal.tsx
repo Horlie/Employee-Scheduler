@@ -864,11 +864,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   <input
                     type="text"
                     placeholder={t('settings_tab.employee_name')}
-                    value={employeeName}
-                  <p>Create a single employee.</p>
-                  <input required
-                    type="text"
-                    placeholder="Employee Name"
                     value={employeeName ?? ""}
                     onChange={(e) => {
                       setEmployeeName(e.target.value);
@@ -878,16 +873,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   <input required
                     type="text"
                     placeholder={t('settings_tab.employee_role')}
-                    value={employeeRole}
-                    placeholder="Role"
                     value={employeeRole ?? ""}
                     onChange={(e) => {
                       setEmployeeRole(e.target.value);
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
-                  <select
-                    value={employeeGender}
                   <select defaultValue={'DEFAULT'}
                     onChange={(e) => {
                       setEmployeeGender(e.target.value as Gender);
