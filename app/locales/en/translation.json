@@ -1,0 +1,56 @@
+{
+  
+  "settings_tab": {
+        "general": "General",
+        "show_less": "Show Less",
+        "male": "Male",
+        "female": "Female",
+        "select_gender": "Select Gender",
+        "not_specified": "Not specified",
+        "importing": "Importing...",
+        "creating_employee": "Creating...",
+        "applying": "Applying...",
+        "when_to_split": "When to split shift?",
+        "at_what_hour_to_split": "At what hour to split?",
+        "hours_per_month": "Hours per month",
+        "fullday_time_shift": "FullDay ({{time}}) shift",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday",
+        "time_shift": "({{time}}) shift",
+        "shifts": "Shifts",
+        "shift_start_time": "Shift Start Time",
+        "shift_end_time": "Shift End Time",
+        "or": "or",
+        "full_day": "Full Day",
+        "every_day": "Every Day",
+        "active_shifts": "Active Shifts",
+        "remove": "Remove",
+        "show_more": "Show More",
+        "close": "Close",
+        "apply": "Apply",
+        "other": "Other",
+        "import_employees_csv": "Import employees from a CSV file.",
+        "choose_file": "Choose file",
+        "no_file_chosen": "No file chosen",
+        "import": "Import",
+        "create_single_employee": "Create a single employee.",
+        "employee_name": "Employee Name",
+        "employee_role": "Role",
+        "unknown": "Unknown",
+        "create_employee": "Create Employee",
+        "full_day_with_time": "Full Day ({{start}} - {{end}})",
+        "errors": {
+        "select_at_least_one_day": "Please select at least one day.",
+        "create_employee_failed": "Failed to create employee. Please try again.",
+        "select_at_least_one_role": "Please select at least one role."
+        },
+        "status": {
+        "import_success": "Employees imported successfully!"
+        }
+    }
+}

@@ -1,0 +1,57 @@
+{
+
+  "settings_tab": {
+    "general": "Kopējais",
+    "hours_per_month": "Mēneša stundu skaits",
+    "fullday_time_shift": "Diennakts ({{time}}) maiņa",
+    "monday": "Pirmdiena",
+    "tuesday": "Otrdiena",
+    "wednesday": "Trešdiena",
+    "thursday": "Ceturtdiena",
+    "friday": "Piektdiena",
+    "saturday": "Sestdiena",
+    "sunday": "Svētdiena",
+    "time_shift": "({{time}}) maiņa",
+    "shifts": "Maiņas",
+    "shift_start_time": "Maiņas sākuma laiks",
+    "shift_end_time": "Maiņas beigas laiks",
+    "or": "vai",
+    "full_day": "Diennakts maiņa",
+    "every_day": "Katru dienu",
+    "active_shifts": "Esošās maiņas",
+    "remove": "Izdzēst",
+    "show_more": "Rādīt vairāk",
+    "close": "Aizvērt",
+    "apply": "Piemērot",
+    "other": "Citi iestatījumi",
+    "import_employees_csv": "Importēt darbinieku sarakstu no CSV tipa faila",
+    "choose_file": "Izvēlēties failu",
+    "no_file_chosen": "Fails pagaidām nav izvelēts",
+    "import": "Importēt",
+    "create_single_employee": "Izveidot vienu darbinieku",
+    "employee_name": "Darbinieka vārds",
+    "employee_role": "Darba amats",
+    "unknown": "Nezināms",
+    "create_employee": "Izveidot darbinieku",
+
+    "show_less": "Rādīt mazāk",
+    "male": "Vīrietis",
+    "female": "Sieviete",
+    "select_gender": "Izvēlieties dzimumu",
+    "not_specified": "Nav norādīts",
+    "importing": "Importē...",
+    "creating_employee": "Izveido darbinieku...",
+    "applying": "Piemēro...",
+    "when_to_split": "Kad sadalīt maiņu?",
+    "at_what_hour_to_split": "Kurā stundā sadalīt?",
+    "full_day_with_time": "Diennakts maiņa ({{start}} - {{end}})",
+    "errors": {
+    "select_at_least_one_day": "Lūdzu, izvēlieties vismaz vienu dienu.",
+    "create_employee_failed": "Neizdevās izveidot darbinieku. Lūdzu, mēģiniet vēlreiz.",
+    "select_at_least_one_role": "Lūdzu, izvēlieties vismaz vienu lomu."
+    },
+    "status": {
+        "import_success": "Darbinieki veiksmīgi importēti!"
+    }
+  }
+}
