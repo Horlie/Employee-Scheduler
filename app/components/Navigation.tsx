@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import LoadingSpinner from "./LoadingSpinner";
+import LanguageSwitcher from "./LanguageSwitcher"; 
 
 interface NavigationProps {
   isLoggedIn: boolean;
@@ -47,7 +48,8 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePag
                 Planning
               </Link>
             </div>
-            <div className="flex items-center pr-12">
+            <div className="flex items-center pr-12 gap-6">
+              <LanguageSwitcher />
               <button
                 onClick={onLogout}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"

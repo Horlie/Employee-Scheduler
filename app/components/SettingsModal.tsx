@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Employee, Shift, RoleSettings } from "../types/scheduler";
 import { useEmployee } from "../context/EmployeeContext";
 import { useRouter } from "next/navigation";
+import { useTranslation } from 'react-i18next';
 import { Gender } from "../types/scheduler";
 
 interface SettingsModalProps {
@@ -42,6 +43,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const { employees, setEmployees } = useEmployee();
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const { t } = useTranslation();
 
   const initializeRoleSettings = (): RoleSettings => {
     const initialSettings: RoleSettings = {};
@@ -122,11 +124,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     e.preventDefault();
     // Added validation for days and roles
     if (shiftDays.length < 1) {
-      setError("Please select at least one day.");
+      setError(t('errors.select_at_least_one_day'));
       return;
     }
     if (selectedRoles.length < 1) {
-      setError("Please select at least one role.");
+      setError(t('errors.select_at_least_one_role'));
       return;
     }
 
@@ -236,6 +238,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         const data = await response.json();
         throw new Error(data.error || "Failed to import employees.");
       }
+      const data = await response.json();
+      data.employeesToCreate.forEach((employee: Employee) => {
+        setEmployees((prevEmployees) => [
+          ...prevEmployees,
+          {
+            id: new Date().getTime(),
+            name: employee.name,
+            role: employee.role,
+            gender: employee.gender,
+            userId: userId,
+            rate: 1.0,
+          },
+        ]);
+      });
+      setUploadStatus(t('status.import_success'));
       const response2 = await fetch(`/api/employees?userId=${JSON.parse(localStorage.getItem("user") ?? "").id}`);
       if (!response2.ok) {
         throw new Error(`Failed to fetch employees: ${response2.statusText}`);
@@ -275,7 +292,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       router.refresh();
     } catch (error: any) {
       console.error("Error creating employee:", error);
-      setCreateEmployeeError("Failed to create employee. Please try again.");
+      setCreateEmployeeError(t('errors.create_employee_failed'));
     } finally {
       setCreating(false);
       const response2 = await fetch(`/api/employees?userId=${JSON.parse(localStorage.getItem("user") ?? "").id}`);
@@ -300,6 +317,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     return Array.from(new Set(shifts));
   };
 
+  const translateDay = (day: string) => {
+    const dayKey = `settings_tab.${day.toLowerCase()}`;
+    return t(dayKey);
+  };
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
@@ -320,7 +341,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 }`}
                 onClick={() => setActiveTab("General")}
               >
-                General
+                {t('settings_tab.general')}
               </a>
               <a
                 href="#"
@@ -331,7 +352,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 }`}
                 onClick={() => setActiveTab("Shifts")}
               >
-                Shifts
+                {t('settings_tab.shifts')}
               </a>
               <a
                 href="#"
@@ -342,7 +363,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 }`}
                 onClick={() => setActiveTab("Other")}
               >
-                Other
+                {t('settings_tab.other')}
               </a>
             </div>
             {activeTab === "General" && (
@@ -350,7 +371,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 <div className="flex flex-col w-full max-w-2xl mx-auto">
                   <div className="flex flex-col justify-between items-center">
                     <label htmlFor="monthlyHours" className="text-nowrap my-2">
-                      Hours per month
+                      {t('settings_tab.hours_per_month')}
                     </label>
                     <input
                       id="monthlyHours"
@@ -378,8 +399,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     {getUniqueShifts(role).map((shift) => (
                       <div key={shift} className="mb-6">
                         <div className="flex justify-center">
-                          <label className="mb-4 mt-2 font-semibold text-gray-500 border border-gray-200 rounded-md p-2">
-                            {shift} shift
+                          <label className="mb-4 mt-2 font-semibold ...">
+                            {shift.startsWith('FullDay') 
+                              ? t('settings_tab.fullday_time_shift', { time: shift.match(/\((.*)\)/)?.[1] || '' })
+                              : t('settings_tab.time_shift', { time: shift })
+                            }
                           </label>
                         </div>
                         <div className="flex flex-row space-x-4">
@@ -393,7 +417,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                             "Sunday",
                           ].map((day) => (
                             <div key={day} className="flex flex-col items-center">
-                              <label className="my-1 text-sm">{day}</label>
+                              <label className="my-1 text-sm">{translateDay(day)}</label>
                               <input
                                 type="number"
                                 min="0"
@@ -438,7 +462,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   <div className="flex flex-row items-center gap-4">
                     <div className="flex flex-col flex-grow mb-6">
                       <label htmlFor="shiftStart" className="mb-1">
-                        Shift Start Time
+                        {t('settings_tab.shift_start_time')}
                       </label>
                       <input
                         id="shiftStart"
@@ -459,7 +483,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     </div>
                     <div className="flex flex-col flex-grow mb-6">
                       <label htmlFor="shiftEnd" className="mb-1">
-                        Shift End Time
+                        {t('settings_tab.shift_end_time')}
                       </label>
                       <input
                         id="shiftEnd"
@@ -479,7 +503,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       <div className="relative">
                         <div className="h-12 border-l border-gray-300"></div>
                         <span className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1/2 bg-white px-2 text-gray-500">
-                          or
+                          {t('settings_tab.or')}
                         </span>
                       </div>
                     </div>
@@ -515,13 +539,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                           </svg>
                         )}
                       </span>
-                      <span className="text-indigo-600">Full Day</span>
+                      <span className="text-indigo-600">{t('settings_tab.full_day')}</span>
                     </label>
                   </div>
                   {isFullDay && (
                     <div className="mb-2 flex justify-center space-x-12">
                       <div className="grid">
-                        <label htmlFor="employeeSplit">When to split shift?</label>
+                        <label htmlFor="employeeSplit">{t('settings_tab.when_to_split_shift')}</label>
                         <input
                         id="employeeSplit"
                         type="number"
@@ -535,7 +559,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                         />
                       </div>
                       <div className="grid">
-                        <label htmlFor="timeSplit">At what hour to split?</label>
+                        <label htmlFor="timeSplit">{t('settings_tab.at_what_hour_to_split')}</label>
                         <input
                         id="timeSplit"
                         type="number"
@@ -578,7 +602,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                           }
                         }}
                       >
-                        {day}
+                        {translateDay(day)}
                       </button>
                     ))}
                     <button
@@ -600,7 +624,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                         }
                       }}
                     >
-                      Every Day
+                      {t('settings_tab.every_day')}
                     </button>
                   </div>
 
@@ -650,7 +674,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   </div>
                 </form>
                 <div className="mt-2">
-                  <h3 className="text-lg font-semibold mb-2">Active Shifts</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t('settings_tab.active_shifts')}</h3>
                   <div className="space-y-3">
                     {!showAllShifts
                       ? activeShifts.slice(0, 2).map((shift) => (
@@ -659,14 +683,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                               <div>
                                 <span className="font-medium">
                                   {shift.isFullDay ? (
-                                    <span>
-                                      Full Day ({shift.startTime.slice(0, -3)} -{" "}
-                                      {shift.endTime.slice(0, -3)})
-                                    </span>
+                                    t('settings_tab.full_day_with_time', { 
+                                      start: shift.startTime.slice(0, -3), 
+                                      end: shift.endTime.slice(0, -3) 
+                                    })
                                   ) : (
-                                    <span>
-                                      {shift.startTime.slice(0, -3)} - {shift.endTime.slice(0, -3)}
-                                    </span>
+                                    `${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)}`
                                   )}
                                 </span>
                                 <div className="flex flex-wrap gap-1 my-1">
@@ -685,7 +707,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                       key={day}
                                       className="px-2 py-1 bg-gray-200 text-xs rounded"
                                     >
-                                      {day}
+                                      {translateDay(day)}
                                     </span>
                                   ))}
                                 </div>
@@ -709,7 +731,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                   }
                                 }}
                               >
-                                Remove
+                                {t('settings_tab.remove')}
                               </button>
                             </div>
                           </div>
@@ -720,14 +742,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                               <div>
                                 <span className="font-medium">
                                   {shift.isFullDay ? (
-                                    <span>
-                                      Full Day ({shift.startTime.slice(0, -3)} -{" "}
-                                      {shift.endTime.slice(0, -3)})
-                                    </span>
+                                    t('settings_tab.full_day_with_time', { 
+                                      start: shift.startTime.slice(0, -3), 
+                                      end: shift.endTime.slice(0, -3) 
+                                    })
                                   ) : (
-                                    <span>
-                                      {shift.startTime.slice(0, -3)} - {shift.endTime.slice(0, -3)}
-                                    </span>
+                                    `${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)}`
                                   )}
                                 </span>
                                 <div className="flex flex-wrap gap-1 my-1">
@@ -770,7 +790,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                   }
                                 }}
                               >
-                                Remove
+                                {t('settings_tab.remove')}
                               </button>
                             </div>
                           </div>
@@ -781,7 +801,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                         className="block mx-auto mt-2 px-4 py-2 text-indigo-600 bg-indigo-200 rounded-full border border-indigo-600 flex items-center justify-center focus:outline-none hover:bg-indigo-500 hover:text-white"
                         onClick={() => setShowAllShifts(!showAllShifts)}
                       >
-                        {showAllShifts ? "Show Less" : "Show More"}
+                        {showAllShifts ? t('settings_tab.show_less') : t('settings_tab.show_more')}
                       </button>
                     )}
                   </div>
@@ -791,7 +811,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
             {activeTab === "Other" && (
               // Other settings
               <div className="flex flex-col mb-4">
-                <p>Import employees from a CSV file.</p>
+                <p>{t('settings_tab.import_employees_csv')}</p>
                 <input
                   type="file"
                   accept=".csv"
@@ -806,7 +826,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   }`}
                   disabled={loading}
                 >
-                  {loading ? "Importing..." : "Import"}
+                  {loading ? t('settings_tab.importing') : t('settings_tab.import')}
                 </button>
                 {uploadStatus && (
                   <div className="mt-2 text-green-600 flex items-center">
@@ -835,11 +855,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                 {/* Separator with "or" */}
                 <div className="flex items-center my-4">
                   <hr className="flex-grow border-t" />
-                  <span className="mx-2 text-gray-500">or</span>
+                  <span className="mx-2 text-gray-500">{t('settings_tab.or')}</span>
                   <hr className="flex-grow border-t" />
                 </div>
                 {/* Form to create a single employee */}
                 <div className="flex flex-col">
+                  <p>{t('settings_tab.create_single_employee')}</p>
+                  <input
+                    type="text"
+                    placeholder={t('settings_tab.employee_name')}
+                    value={employeeName}
                   <p>Create a single employee.</p>
                   <input required
                     type="text"
@@ -852,6 +877,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   />
                   <input required
                     type="text"
+                    placeholder={t('settings_tab.employee_role')}
+                    value={employeeRole}
                     placeholder="Role"
                     value={employeeRole ?? ""}
                     onChange={(e) => {
@@ -859,12 +886,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
+                  <select
+                    value={employeeGender}
                   <select defaultValue={'DEFAULT'}
                     onChange={(e) => {
                       setEmployeeGender(e.target.value as Gender);
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   >
+                  <option value="" disabled>{t('settings_tab.select_gender')}</option>
+                  <option value="male">{t('settings_tab.male')}</option>
+                  <option value="female">{t('settings_tab.female')}</option>
+                  <option value="">{t('settings_tab.not_specified')}</option>
                     <option value={"DEFAULT"} disabled>Select Gender</option>
                     {Object.values(Gender).map(gender => (
                       <option key={gender} value={gender}>{gender}</option>
@@ -878,7 +911,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     }`}
                     disabled={creating || !employeeGender || !employeeName || !employeeRole}
                   >
-                    {creating ? "Creating..." : "Create Employee"}
+                    {creating ? t('settings_tab.creating_employee') : t('settings_tab.create_employee')}
                   </button>
                   {createEmployeeStatus && (
                     <div className="mt-2 text-green-600 flex items-center">
@@ -929,14 +962,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   onClick={applyChanges}
                   disabled={loading}
                 >
-                  {loading ? "Applying..." : "Apply"}
+                  {loading ? t('settings_tab.applying') : t('settings_tab.apply')}
                 </button>
               )}
               <button
                 className="py-1.5 border border-indigo-600 bg-white text-indigo-600 rounded hover:bg-indigo-600 hover:text-white w-full"
                 onClick={onClose}
               >
-                Close
+                {t('settings_tab.close')}
               </button>
             </div>
           </>
