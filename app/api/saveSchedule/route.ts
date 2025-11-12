@@ -13,15 +13,17 @@ export async function POST(request: Request) {
           month: month
          },
       });
-      for (const i in Object.keys(data)) {
+      for (const roleKey of Object.keys(data)) {
+        const role = roleKey; // The key is the role name
         await prisma.timefoldShift.createMany({
-          data: data[Object.keys(data)[i]].shifts.map((shift: { employee: { id: any; }; isFullDay: any; start: string | number | Date; end: string | number | Date; })=> ({
+          data: data[roleKey].shifts.map((shift: { employee: { id: any; }; isFullDay: any; start: string | number | Date; end: string | number | Date; requiredSkill?: string; })=> ({
             userId: employeeId,
             employeeId: parseInt(shift.employee.id),
             isFullDay: shift.isFullDay,
             start: new Date(shift.start),
             end: new Date(shift.end),
-            month: month
+            month: month,
+            role: shift.requiredSkill || role || null // Use requiredSkill from shift if available, otherwise use the role key
           })),
         });
       }

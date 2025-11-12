@@ -55,7 +55,14 @@ export async function POST(request: Request) {
   try {
     await prisma.$connect();
 
-    const { name, role, userId, gender } = await request.json();
+    const { name, role, roles, userId, gender } = await request.json();
+
+    // Support both single role (for backward compatibility) and roles array
+    const rolesArray = roles 
+      ? (Array.isArray(roles) ? roles : [roles])
+      : (role ? [role] : []);
+
+    const normalizedRoles = rolesArray.map((r: string) => r.toUpperCase());
 
     const existingEmployee = await prisma.employee.findFirst({
       where: {
@@ -70,7 +77,7 @@ export async function POST(request: Request) {
       employee = await prisma.employee.update({
         where: { id: existingEmployee.id },
         data: {
-          role: role.toUpperCase(),
+          roles: normalizedRoles,
           gender
         },
       });
@@ -78,12 +85,13 @@ export async function POST(request: Request) {
       employee = await prisma.employee.create({
         data: {
           name,
-          role: role.toUpperCase(),
+          roles: normalizedRoles,
           userId: parseInt(userId),
           gender
         },
       });
     }
+    console.log(employee)
     return NextResponse.json({ employee }, { status: 201 });
   } catch (error) {
     console.error("Error creating employee:", error);
@@ -107,11 +115,18 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Employee ID is required" }, { status: 400 });
     }
 
+    // Ensure roles is an array
+    const rolesArray = Array.isArray(response.roles) 
+      ? response.roles 
+      : (response.role ? [response.role] : []);
+    
+    const normalizedRoles = rolesArray.map((r: string) => typeof r === 'string' ? r.toUpperCase() : r);
+
     let newEmployee = await prisma.employee.update({
       where: { id: response.id },
       data: {
         name: response.name,
-        role: response.role,
+        roles: normalizedRoles,
         gender: response.gender
       },
     });

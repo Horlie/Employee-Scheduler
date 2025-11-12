@@ -97,10 +97,12 @@ export default function Planning() {
     router.replace("/");
   };
 
-  // Extract unique roles
+  // Extract unique roles from all employee roles
   const roles = useMemo(() => {
     const roleSet = new Set<string>();
-    employees.forEach((employee) => roleSet.add(employee.role));
+    employees.forEach((employee) => {
+      employee.roles.forEach((role) => roleSet.add(role));
+    });
     return Array.from(roleSet);
   }, [employees]);
 

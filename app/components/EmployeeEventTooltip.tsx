@@ -48,7 +48,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
       }}
     >
       <h3 className="font-bold text-lg mb-2">{employee.name}</h3>
-      <p className="text-sm text-gray-600 mb-2 capitalize">{employee.role}</p>
+      <p className="text-sm text-gray-600 mb-2 capitalize">{employee.roles.join(", ")}</p>
       <p className="text-sm mb-2">Date: {date.toLocaleDateString()}</p>
       <div className="mb-2">
         <label className="flex items-center">

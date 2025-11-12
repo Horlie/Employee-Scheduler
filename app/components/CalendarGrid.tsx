@@ -32,10 +32,10 @@ interface CalendarGridProps {
   isPlanningFullDay: Map<string | number, boolean>;
   onScheduleChange: () => void;
 }
-const DroppableCell: React.FC<{ employee: Employee; day: Date; children: React.ReactNode }> = ({ employee, day, children }) => {
+const DroppableCell: React.FC<{ employee: Employee; day: Date; children: React.ReactNode; role: string }> = ({ employee, day, children, role }) => {
   const { setNodeRef } = useDroppable({
-    id: `cell-${employee.id}-${day.toISOString().split('T')[0]}`,
-    data: { employeeId: employee.id, date: day, role: employee.role }, 
+    id: `cell-${employee.id}-${day.toISOString().split('T')[0]}-${role}`,
+    data: { employeeId: employee.id, date: day, role: role }, 
   });
   return <div ref={setNodeRef} className="w-full h-full">{children}</div>;
 };
@@ -306,7 +306,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     const targetRole = over.data.current.role;
 
     const draggedShiftEmployee = employees.find(e => e.id === draggedShift.employeeId);
-    if (draggedShiftEmployee?.role !== targetRole) {
+    if (!draggedShiftEmployee?.roles.includes(targetRole)) {
       alert("You can only move shifts within the same role group (e.g., Nurse to Nurse).");
       return;
     }
@@ -482,7 +482,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     </div>
   );
 
-  const renderAvailabilityTile = (employee: Employee, day: Date) => {
+  const renderAvailabilityTile = (employee: Employee, day: Date, role: string) => {
     const cellKey = `${employee.id}-${fromZonedTime(day, "UTC").toISOString().split("T")[0]}`;
 
     const cellColor =
@@ -498,17 +498,20 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         a.employeeId === Number(employee.id) &&
         new Date(a.startDate).toDateString() === day.toDateString()
     );
+    // Filter schedule shifts by role - only show shifts that match the current role group
+    // For backward compatibility, show shifts without a role in all groups
     const schedule = scheduleData.find(
-      (a: EmployeeAvailability) =>
+      (a: EmployeeAvailability & { role?: string }) =>
         a.employeeId === Number(employee.id) &&
-        new Date(a.startDate).toDateString() === day.toDateString()
+        new Date(a.startDate).toDateString() === day.toDateString() &&
+        (a.role === undefined || a.role === null || a.role === role) // Only show shift if it matches the current role group (or has no role for backward compatibility)
     );
     const formatTime = (date: Date) => format(new Date(date), "HH:mm");
 
     const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
 
     return (
-      <DroppableCell employee={employee} day={day}>
+      <DroppableCell employee={employee} day={day} role={role}>
         <div
           className={`flex-shrink-0 border-r border-b border-gray-300 ${cellColor} ${
             isHovered ? "relative z-[3]" : ""
@@ -518,7 +521,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             height: "50px",
             boxShadow: isHovered ? "0 0 12px 1px lightblue" : "none",
           }}
-          onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), employee.role)}
+          onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), role)}
           onMouseLeave={handleCellLeave}
           onClick={(e) => handleCellClick(employee, day, e)}
         >
@@ -575,7 +578,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                   {day.getDay() === 1 && (
                     <div className="flex-shrink-0 w-6 border-r border-gray-300"></div>
                   )}
-                  {renderAvailabilityTile(employee, day)}
+                  {renderAvailabilityTile(employee, day, role)}
                 </React.Fragment>
               ))}
             </div>

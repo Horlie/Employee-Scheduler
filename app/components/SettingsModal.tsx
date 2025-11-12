@@ -245,7 +245,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
           {
             id: new Date().getTime(),
             name: employee.name,
-            role: employee.role,
+            roles: Array.isArray(employee.roles) ? employee.roles : [employee.roles || ""],
             gender: employee.gender,
             userId: userId,
             rate: 1.0,
@@ -276,10 +276,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     setCreateEmployeeStatus(null);
     setCreateEmployeeError(null);
     try {
+      // Convert comma-separated roles to array
+      const rolesArray = role.split(",").map(r => r.trim()).filter(r => r.length > 0);
       const response = await fetch("/api/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, name, role, gender }),
+        body: JSON.stringify({ userId, name, roles: rolesArray, gender }),
       });
       if (!response.ok) {
         const data = await response.json();
@@ -886,13 +888,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     className="mt-2 p-2 border border-gray-300 rounded"
                   >
                   <option value="" disabled>{t('settings_tab.select_gender')}</option>
-                  <option value="male">{t('settings_tab.male')}</option>
-                  <option value="female">{t('settings_tab.female')}</option>
-                  <option value="">{t('settings_tab.not_specified')}</option>
-                    <option value={"DEFAULT"} disabled>Select Gender</option>
-                    {Object.values(Gender).map(gender => (
-                      <option key={gender} value={gender}>{gender}</option>
-                    ))}
+                  <option value={Gender.MALE}>{t('settings_tab.male')}</option>
+                  <option value={Gender.FEMALE}>{t('settings_tab.female')}</option>
                   </select>
                   <button
                     type="button"

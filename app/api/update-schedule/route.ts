@@ -12,13 +12,14 @@ export async function POST(request: NextRequest) {
     }
     
     await prisma.$transaction(
-    schedule.map((shift) =>
+    schedule.map((shift: any) =>
       prisma.timefoldShift.upsert({
         where: { id: shift.id },
         update: {
           start: new Date(shift.start),
           end: new Date(shift.end),
           isFullDay: shift.isFullDay,
+          role: shift.role || null, // Preserve role when updating
         },
         create: {
           start: new Date(shift.start),
@@ -26,7 +27,8 @@ export async function POST(request: NextRequest) {
           isFullDay: shift.isFullDay,
           month: month,
           userId: userId,
-          employeeId: shift.employeeId
+          employeeId: shift.employeeId,
+          role: shift.role || null // Include role when creating
         },
       })
     )

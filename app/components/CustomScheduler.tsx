@@ -144,7 +144,9 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   }
     
     const roleSet = new Set<string>();
-    employees.forEach((employee) => roleSet.add(employee.role));
+    employees.forEach((employee) => {
+      employee.roles.forEach((role) => roleSet.add(role));
+    });
     return Array.from(roleSet);
   }, [employees]);
 
@@ -169,12 +171,15 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   );
 
   // Add this function to group and sort employees
+  // Employees with multiple roles will appear in multiple groups
   const groupEmployeesByRole = (employees: Employee[]) => {
     const grouped = employees.reduce((acc, employee) => {
-      if (!acc[employee.role]) {
-        acc[employee.role] = [];
-      }
-      acc[employee.role].push(employee);
+      employee.roles.forEach((role) => {
+        if (!acc[role]) {
+          acc[role] = [];
+        }
+        acc[role].push(employee);
+      });
       return acc;
     }, {} as Record<string, Employee[]>);
 

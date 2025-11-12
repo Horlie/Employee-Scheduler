@@ -55,8 +55,8 @@ export async function POST(req: Request) {
       }));
 
       const rolePromises = roles.map(async (role) => {
-        // Filter employees by role
-        const roleEmployees = employees.filter((employee: Employee) => employee.role === role);
+        // Filter employees by role - check if employee's roles array includes this role
+        const roleEmployees = employees.filter((employee: Employee) => employee.roles.includes(role));
 
         // Build TimeFold JSON for the role
         const roleTimefoldJson = buildTimefoldJson(
@@ -151,12 +151,12 @@ function buildTimefoldJson(
 
   const timefoldEmployees = roleEmployees
     .filter(
-      (employee) => employee.role === role && Math.floor(user.monthlyHours * employee.rate) > 0
+      (employee) => employee.roles.includes(role) && Math.floor(user.monthlyHours * employee.rate) > 0
     ) // Filter employees by role
     .map((employee: Employee) => ({ 
       id: employee.id,
       name: employee.name,
-      skills: [employee.role],
+      skills: employee.roles,
       vacationIntervals: employee.availability
         ? employee.availability
             .filter((a: EmployeeAvailability) => a.status === "vacation")
@@ -228,7 +228,7 @@ function generateMonthlyShifts(
   }> = [];
   let shiftCounter = 1; 
 
-  const employeesInRole = allEmployees.filter(emp => emp.role === role);
+  const employeesInRole = allEmployees.filter(emp => emp.roles.includes(role));
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);

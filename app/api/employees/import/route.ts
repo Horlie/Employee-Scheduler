@@ -34,13 +34,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare data for insertion
-    const employeesToCreate = records.map((record: any) => ({
-      name: record[0],
-      role: record[1].toUpperCase(),
-      gender: record[2],
-      userId: Number(userId),
-
-    }));
+    // Support comma-separated roles in CSV
+    const employeesToCreate = records.map((record: any) => {
+      const roleString = record[1] || "";
+      const rolesArray = roleString.split(",").map((r: string) => r.trim().toUpperCase()).filter((r: string) => r.length > 0);
+      return {
+        name: record[0],
+        roles: rolesArray,
+        gender: record[2],
+        userId: Number(userId),
+      };
+    });
     console.log(employeesToCreate);
     // Insert employees into the database
     await prisma.employee.createMany({

@@ -23,7 +23,7 @@ model User {
 model Employee {
   id             Int                    @id @default(autoincrement())
   name           String
-  role           String
+  roles          String[]
   rate           Float                  @default(1.0)
   gender         String                 @default("Unknown")
   userId         Int
@@ -68,4 +68,5 @@ model TimefoldShift {
   start      DateTime
   end        DateTime
   month      Int
+  role       String?
 }

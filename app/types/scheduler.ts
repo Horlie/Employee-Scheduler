@@ -11,7 +11,7 @@ export interface Employee {
   id: number; // Changed from string to number
   name: string;
   rate: number;
-  role: string;
+  roles: string[];
   availability?: EmployeeAvailability[];
   gender: Gender;
 }
@@ -30,7 +30,7 @@ export interface EmployeeAvailability {
   
   status?: string;
   isFullDay?: boolean;
-  employee?: { name: string, role?: string }; 
+  employee?: { name: string, roles?: string[] }; 
 }
 
 
@@ -87,5 +87,6 @@ export interface TimefoldShift {
   start: string;
   end: string;
   month: number;
+  role?: string;
 }
 
