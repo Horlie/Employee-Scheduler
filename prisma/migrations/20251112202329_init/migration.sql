@@ -15,7 +15,7 @@ CREATE TABLE "User" (
 CREATE TABLE "Employee" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "role" TEXT NOT NULL,
+    "roles" TEXT[],
     "rate" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
     "gender" TEXT NOT NULL DEFAULT 'Unknown',
     "userId" INTEGER NOT NULL,
@@ -46,6 +46,7 @@ CREATE TABLE "Shift" (
     "isFullDay" BOOLEAN NOT NULL DEFAULT false,
     "hourToSplitAt" TEXT,
     "numberToSplitAt" TEXT,
+    "gender" TEXT,
 
     CONSTRAINT "Shift_pkey" PRIMARY KEY ("id")
 );
@@ -59,6 +60,7 @@ CREATE TABLE "TimefoldShift" (
     "start" TIMESTAMP(3) NOT NULL,
     "end" TIMESTAMP(3) NOT NULL,
     "month" INTEGER NOT NULL,
+    "role" TEXT,
 
     CONSTRAINT "TimefoldShift_pkey" PRIMARY KEY ("id")
 );
