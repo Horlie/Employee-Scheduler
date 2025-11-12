@@ -58,8 +58,8 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
   const handleFullDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setIsFullDay(checked);
-    setStartTime('09:00');
-    setEndTime(startTime);
+    setStartTime(startTime);
+    checked ? setEndTime(startTime) : setEndTime("17:00");
   };
 
   const handleSave = useCallback(() => {
@@ -69,9 +69,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
     const newStartDate = new Date(date);
     newStartDate.setHours(startHour, startMinute, 0, 0);
     const newFinishDate = new Date(date);
-    console.log(newFinishDate);
     newFinishDate.setHours(endHour, endMinute, 0, 0);
-    console.log(newFinishDate);
     
     // Handle overnight shifts
     if (newFinishDate <= newStartDate) {
@@ -85,7 +83,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
       finishDate: newFinishDate,
       start: newStartDate,
       end: newFinishDate,
-      isFullDay,
+      isFullDay: isFullDay,
     };
 
     onSave(shiftPayload);

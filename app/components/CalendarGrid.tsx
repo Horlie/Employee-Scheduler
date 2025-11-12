@@ -136,7 +136,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       ...prev,
       [cellKey]: "bg-purple-100",
     }))
-    if (shiftToSave) isScheduleFullDay.set(shiftToSave.id, true);
+    if (shiftToSave) isScheduleFullDay.set(shiftToSave.id, shiftToSave.isFullDay!);
     onScheduleChange();
   };
 
