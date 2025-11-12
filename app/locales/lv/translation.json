@@ -33,7 +33,6 @@
     "employee_role": "Darba amats",
     "unknown": "Nezināms",
     "create_employee": "Izveidot darbinieku",
-
     "show_less": "Rādīt mazāk",
     "male": "Vīrietis",
     "female": "Sieviete",
@@ -44,14 +43,28 @@
     "applying": "Piemēro...",
     "when_to_split": "Kad sadalīt maiņu?",
     "at_what_hour_to_split": "Kurā stundā sadalīt?",
-    "full_day_with_time": "Diennakts maiņa ({{start}} - {{end}})",
+    "full_day_with_time": "Diennakts maiņa ({{start}} - {{end}})"
+    },
     "errors": {
     "select_at_least_one_day": "Lūdzu, izvēlieties vismaz vienu dienu.",
     "create_employee_failed": "Neizdevās izveidot darbinieku. Lūdzu, mēģiniet vēlreiz.",
-    "select_at_least_one_role": "Lūdzu, izvēlieties vismaz vienu lomu."
+    "select_at_least_one_role": "Lūdzu, izvēlieties vismaz vienu lomu.",
+    "role_settings_missing": "Iegūtajos datos trūkst lomu iestatījumu.",
+    "fetch_data_failed": "Neizdevās iegūt datus. Lūdzu, mēģiniet vēlreiz.",
+    "user_not_found": "Lietotājs nav atrasts. Lūdzu, piesakieties vēlreiz."
     },
     "status": {
         "import_success": "Darbinieki veiksmīgi importēti!"
+    },
+    "tooltip": {
+      "date": "Datums",
+      "full_day": "Pilna diena",
+      "to": "līdz",
+      "unavailable": "Nav pieejams",
+      "unreachable": "Nav sasniedzams",
+      "preferable": "Vēlams",
+      "vacation": "Atvaļinājums",
+      "delete": "Dzēst"
     }
-  }
+  
 }

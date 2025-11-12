@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Employee } from "../types/scheduler";
 import TimePicker from "react-accessible-time-picker";
+import { useTranslation } from "react-i18next";
 
 interface EmployeeEventTooltipProps {
   employee: Employee;
@@ -19,11 +20,13 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
   onAction,
   position,
 }) => {
+  const { t } = useTranslation();
   const [isFullDay, setIsFullDay] = useState(true);
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
+  
 
-  const handleAction = (action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation" | "vacation") => {
+  const handleAction = (action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation" ) => {
     const startDate = new Date(date);
     const finishDate = new Date(date);
     if (isFullDay) {
@@ -37,6 +40,22 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
     }
     onAction(action, startDate, finishDate);
   };
+  const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStartTime = e.target.value;
+    setStartTime(newStartTime);
+
+    if (newStartTime > endTime) {
+      setEndTime(newStartTime);
+    }
+  };
+  const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEndTime = e.target.value;
+
+    if (newEndTime >= startTime) {
+      setEndTime(newEndTime);
+    }
+  };
+
 
   return (
     <div
@@ -49,7 +68,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
     >
       <h3 className="font-bold text-lg mb-2">{employee.name}</h3>
       <p className="text-sm text-gray-600 mb-2 capitalize">{employee.roles.join(", ")}</p>
-      <p className="text-sm mb-2">Date: {date.toLocaleDateString()}</p>
+      <p className="text-sm mb-2">{t('tooltip.date')}: {date.toLocaleDateString()}</p>
       <div className="mb-2">
         <label className="flex items-center">
           <input
@@ -58,14 +77,24 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
             onChange={(e) => setIsFullDay(e.target.checked)}
             className="mr-2"
           />
-          Full Day
+          {t('tooltip.full_day')}
         </label>
       </div>
       {!isFullDay && (
         <div className="flex space-x-2 mb-2">
-          <TimePicker minuteStep={10}  is24Hour={true} onChange={(value) => setStartTime(value.hour+":"+value.minute)} />
-          <span className="text-sm pt-2.5">to</span>
-          <TimePicker minuteStep={10} is24Hour={true} onChange={(value) => setEndTime(value.hour+":"+value.minute)} />
+          <input
+            type="time"
+            value={startTime}
+            onChange={handleStartTimeChange}
+            className="border rounded px-2 py-1 text-sm"
+          />
+          <span className="text-sm pt-1">{t('tooltip.to')}</span>
+          <input
+            type="time"
+            value={endTime}
+            onChange={handleEndTimeChange}
+            className="border rounded px-2 py-1 text-sm"
+          />
         </div>
       )}
       <div className="grid grid-cols-2 gap-2">
@@ -73,32 +102,32 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
           className="bg-yellow-500 text-white px-4 py-1 rounded hover:bg-yellow-600 text-sm"
           onClick={() => handleAction("unavailable")}
         >
-          Unavailable
+          {t('tooltip.unavailable')}
         </button>
         <button
           className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600 text-sm"
           onClick={() => handleAction("unreachable")}
         >
-          Unreachable
+          {t('tooltip.unreachable')}
         </button>
         <button
           className="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600 text-sm"
           onClick={() => handleAction("preferable")}
         >
-          Preferable
+          {t('tooltip.preferable')}
         </button>
         <button
           className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600 text-sm"
           onClick={() => handleAction("vacation")}
         >
-          Vacation
+          {t('tooltip.vacation')}
         </button>
 
         <button
           className="bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 text-sm col-span-2"
           onClick={() => handleAction("delete")}
         >
-          Delete
+          {t('tooltip.delete')}
         </button>
       </div>
     </div>
