@@ -53,6 +53,7 @@ export interface Shift {
   isFullDay: boolean;
   hourToSplitAt: string | null;
   numberToSplitAt: string | null;
+  gender?: Gender | Gender[] | string | null; // Can be single gender, array of genders, or comma-separated string
 }
 
 export interface User {

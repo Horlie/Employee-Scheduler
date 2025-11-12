@@ -54,7 +54,8 @@ export async function POST(request: Request) {
             roles: { set: shift.roles },
             userId: parseInt(userId),
             numberToSplitAt: numberEmployeesToSplitAt,
-            hourToSplitAt: hourToSplitAt
+            hourToSplitAt: hourToSplitAt,
+            gender: shift.gender || null
           },
         });
         const shiftString = shift.isFullDay

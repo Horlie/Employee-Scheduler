@@ -34,17 +34,15 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
       )
     );
   };
-  const getGender = (gender: Gender): string => {
+  const isMale = (gender: Gender): boolean => {
     if (!gender) {
-      return ""; 
+      return false
     }
     switch (gender) {
       case Gender.MALE:
-        return 'Mr. ';
-      case Gender.FEMALE:
-        return 'Ms. ';
+        return true
       default:
-        return ''; 
+        return false
     }
   };
   const handleRateClick = (
@@ -167,8 +165,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                   </div>
 
                 <div className="flex flex-col">
-                  <div className="font-semibold text-sm">
-                    {getGender(employee.gender)}
+                  <div className={`font-semibold text-sm ${isMale(employee.gender) ? "text-blue-500" : "text-pink-500"} `}>
                     {employee.name.split(" ").slice(0, 2).join(" ")}
                     {/* Display total hours */}
                     {!showTooltips && (

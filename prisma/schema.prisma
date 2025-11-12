@@ -55,6 +55,7 @@ model Shift {
   isFullDay       Boolean  @default(false)
   hourToSplitAt   String?
   numberToSplitAt String?
+  gender          String?
 }
 
 

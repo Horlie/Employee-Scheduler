@@ -156,7 +156,7 @@ function buildTimefoldJson(
     .map((employee: Employee) => ({ 
       id: employee.id,
       name: employee.name,
-      skills: employee.roles,
+      skills: [...employee.roles, employee.gender], // Include both roles and gender as skills
       vacationIntervals: employee.availability
         ? employee.availability
             .filter((a: EmployeeAvailability) => a.status === "vacation")
@@ -223,6 +223,7 @@ function generateMonthlyShifts(
     end: string;
     location: string;
     requiredSkill: string;
+    gender: string[];
     isFullDay: boolean;
     midTime?: string;
   }> = [];
@@ -236,23 +237,25 @@ function generateMonthlyShifts(
     const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
       dayOfWeek
     ];
-    const availableEmployeesCount = employeesInRole.filter(emp => {
-      const isUnavailable = emp.availability?.some(avail => {
-        const start = new Date(avail.startDate);
-        const finish = new Date(avail.finishDate); 
-        const status = (avail.status ?? "").toLowerCase();
-
-        const isUnavailableStatus = status === "unavailable" || status === "vacation";
-        const isWithinRange = date >= start && date <= finish;
-
-        return isWithinRange && isUnavailableStatus;
-      });
-      
-      return !isUnavailable;
-    }).length;
-
+    
     shifts.forEach((shift) => {
       if (shift.days.includes(dayName) && shift.roles.includes(role)) {
+        // Calculate available employees count (gender filtering is now handled by Timefold via skills)
+        const availableEmployeesCount = employeesInRole.filter(emp => {
+          const isUnavailable = emp.availability?.some(avail => {
+            const start = new Date(avail.startDate);
+            const finish = new Date(avail.finishDate); 
+            const status = (avail.status ?? "").toLowerCase();
+
+            const isUnavailableStatus = status === "unavailable" || status === "vacation";
+            const isWithinRange = date >= start && date <= finish;
+
+            return isWithinRange && isUnavailableStatus;
+          });
+          
+          return !isUnavailable;
+        }).length;
+
         // Filter shifts by role
         shift.roles.forEach((shiftRole) => {
           if (shiftRole !== role) return; // Only process the current role
@@ -281,12 +284,23 @@ function generateMonthlyShifts(
               console.log(`Splitting Full Day shift on ${date.toLocaleDateString()} for role '${role}'. Available employees: ${availableEmployeesCount}`);
               const midTime = new Date(startTime.getTime() + splitHour * 60 * 60 * 1000);
 
+              const requiredGenders = [];
+              if (shift.gender) {
+                const shiftGenders: string[] = typeof shift.gender === 'string' && shift.gender.includes(',')
+                  ? shift.gender.split(',').map((g: string) => g.trim()).filter(g => g)
+                  : Array.isArray(shift.gender)
+                  ? shift.gender.filter(g => g)
+                  : [shift.gender].filter(g => g);
+                requiredGenders.push(...shiftGenders);
+              }
+
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,
                 start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
                 end: formatInTimeZone(midTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
                 location: "Hospital",
                 requiredSkill: role,
+                gender: requiredGenders,
                 isFullDay: false,
                 midTime: formatInTimeZone(midTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"), 
               });
@@ -297,11 +311,22 @@ function generateMonthlyShifts(
                 end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
                 location: "Hospital",
                 requiredSkill: role,
+                gender: requiredGenders,
                 isFullDay: false,
               });
             } else {
               if (shift.isFullDay) {
                  console.log(`Keeping Full Day shift as single on ${date.toLocaleDateString()} for role '${role}'. Available employees: ${availableEmployeesCount}`);
+              }
+
+              const requiredGenders = [];
+              if (shift.gender) {
+                const shiftGenders: string[] = typeof shift.gender === 'string' && shift.gender.includes(',')
+                  ? shift.gender.split(',').map((g: string) => g.trim()).filter(g => g)
+                  : Array.isArray(shift.gender)
+                  ? shift.gender.filter(g => g)
+                  : [shift.gender].filter(g => g);
+                requiredGenders.push(...shiftGenders);
               }
 
               timefoldShifts.push({
@@ -310,6 +335,7 @@ function generateMonthlyShifts(
                 end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
                 location: "Hospital",
                 requiredSkill: role,
+                gender: requiredGenders,
                 isFullDay: shift.isFullDay,
               });
             }

@@ -40,6 +40,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [createEmployeeError, setCreateEmployeeError] = useState<string | null>(null);
   const [numberEmployeesToSplitAt, setNumberEmployeesToSplitAt] = useState<string>("7");
   const [hourToSplitAt, setHourToSplitAt] = useState<string>("17");
+  const [selectedGenders, setSelectedGenders] = useState<Gender[]>([]); // Added for shift gender selection (multiple)
   const { employees, setEmployees } = useEmployee();
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -142,6 +143,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       isFullDay: isFullDay,
       numberToSplitAt: isFullDay ? numberEmployeesToSplitAt : null,
       hourToSplitAt: isFullDay ? hourToSplitAt : null,
+      gender: selectedGenders.length > 0 ? selectedGenders.join(",") : null, // Store as comma-separated string
     };
     setPendingShifts([...pendingShifts, newShift]);
     setActiveShifts([...activeShifts, newShift]);
@@ -152,6 +154,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     setStartTime("");
     setEndTime("");
     setIsFullDay(false);
+    setSelectedGenders([]);
   };
 
   const handleRemove = (id: number) => {
@@ -654,6 +657,45 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     ))}
                   </div>
 
+                  {/* Gender selection for shift - similar to role selection */}
+                  <div className="flex flex-col mt-4 border-t border-gray-300 pt-4">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {[Gender.MALE, Gender.FEMALE].map((gender) => {
+                        const isSelected = selectedGenders.includes(gender);
+                        let bgColor = "bg-gray-50 text-gray-500";
+                        let selectedBgColor = "";
+                        
+                        if (gender === Gender.MALE) {
+                          selectedBgColor = "bg-blue-200 text-blue-700";
+                        } else if (gender === Gender.FEMALE) {
+                          selectedBgColor = "bg-pink-200 text-pink-700";
+                        } else {
+                          selectedBgColor = "bg-indigo-200 text-indigo-700";
+                        }
+                        
+                        return (
+                          <button
+                            key={gender}
+                            type="button"
+                            className={`px-3 py-2 rounded font-medium ${
+                              isSelected ? selectedBgColor : bgColor
+                            } hover:opacity-80 transition-opacity`}
+                            onClick={() => {
+                              if (selectedGenders.includes(gender)) {
+                                setSelectedGenders(selectedGenders.filter((g) => g !== gender));
+                              } else {
+                                setSelectedGenders([...selectedGenders, gender]);
+                              }
+                            }}
+                          >
+                            {gender === Gender.MALE && (t('settings_tab.male') || 'Male')}
+                            {gender === Gender.FEMALE && (t('settings_tab.female') || 'Female')}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="relative flex justify-center my-4 mt-10">
                     <hr className="w-full border-t border-gray-300" />
                     <button
@@ -713,6 +755,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                     </span>
                                   ))}
                                 </div>
+                                {shift.gender && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {(typeof shift.gender === 'string' && shift.gender.includes(',') 
+                                      ? shift.gender.split(',') 
+                                      : Array.isArray(shift.gender) 
+                                        ? shift.gender 
+                                        : [shift.gender]
+                                    ).map((gender: string) => {
+                                      const genderStr = typeof gender === 'string' ? gender.trim() : gender;
+                                      let bgColor = "bg-indigo-200 text-indigo-700";
+                                      if (genderStr === Gender.MALE) {
+                                        bgColor = "bg-blue-200 text-blue-700";
+                                      } else if (genderStr === Gender.FEMALE) {
+                                        bgColor = "bg-pink-200 text-pink-700";
+                                      }
+                                      return (
+                                        <span
+                                          key={genderStr}
+                                          className={`px-2 py-1 text-xs rounded ${bgColor}`}
+                                        >
+                                          {genderStr}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
                               <button
                                 className="text-red-500 hover:text-red-700"
@@ -772,6 +840,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                     </span>
                                   ))}
                                 </div>
+                                {shift.gender && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {(typeof shift.gender === 'string' && shift.gender.includes(',') 
+                                      ? shift.gender.split(',') 
+                                      : Array.isArray(shift.gender) 
+                                        ? shift.gender 
+                                        : [shift.gender]
+                                    ).map((gender: string) => {
+                                      const genderStr = typeof gender === 'string' ? gender.trim() : gender;
+                                      let bgColor = "bg-indigo-200 text-indigo-700";
+                                      if (genderStr === Gender.MALE) {
+                                        bgColor = "bg-blue-200 text-blue-700";
+                                      } else if (genderStr === Gender.FEMALE) {
+                                        bgColor = "bg-pink-200 text-pink-700";
+                                      }
+                                      return (
+                                        <span
+                                          key={genderStr}
+                                          className={`px-2 py-1 text-xs rounded ${bgColor}`}
+                                        >
+                                          {genderStr}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
                               <button
                                 className="text-red-500 hover:text-red-700"
