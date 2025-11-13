@@ -62,6 +62,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   
   useEffect(() => {
     if (isOpen) {
+      resetShiftForm();
       setIsLoading(true);
       const user = localStorage.getItem("user");
       if (user) {
@@ -121,16 +122,77 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     };
   }, [isOpen]);
 
+  const handleTimeChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const input = e.target.value;
+    const digits = input.replace(/\D/g, '');
+
+    const truncatedDigits = digits.slice(0, 4);
+
+    let formattedTime = truncatedDigits;
+
+    if (truncatedDigits.length > 2) {
+      formattedTime = `${truncatedDigits.slice(0, 2)}:${truncatedDigits.slice(2)}`;
+    }
+
+    setter(formattedTime);
+  };
+  const timeToMinutes = (time: string): number => {
+    if (!time || !time.includes(':')) return 0;
+    
+    const [hours, minutes] = time.split(':').map(Number);
+    
+    if (isNaN(hours) || isNaN(minutes)) return 0;
+    
+    return hours * 60 + minutes;
+  };
+  const resetShiftForm = () => {
+    setStartTime("");
+    setEndTime("");
+  };
+  const validateAndCorrectTime = (time: string): string => {
+    if (!time) return ""; 
+
+    const [hoursStr = '00', minutesStr = '00'] = time.split(':');
+    let hours = parseInt(hoursStr, 10);
+    let minutes = parseInt(minutesStr, 10);
+
+    if (isNaN(hours)) hours = 0;
+    if (isNaN(minutes)) minutes = 0;
+
+    if (hours > 23) {
+      const firstDigit = parseInt(String(hours).charAt(0), 10);
+      if (firstDigit >= 3 && firstDigit <= 9) {
+        hours = firstDigit;
+      } else {
+        hours = 23;
+      }
+    }
+
+    if (minutes > 59) {
+      minutes = 59;
+    }
+
+    const formattedHours = String(hours).padStart(2, '0');
+    const formattedMinutes = String(minutes).padStart(2, '0');
+
+    return `${formattedHours}:${formattedMinutes}`;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Added validation for days and roles
     if (shiftDays.length < 1) {
-      setError(t('errors.select_at_least_one_day'));
+      // setError(t('errors.select_at_least_one_day'));
       return;
     }
     if (selectedRoles.length < 1) {
-      setError(t('errors.select_at_least_one_role'));
+      // setError(t('errors.select_at_least_one_role'));
       return;
+    }
+    if (!startTime || !endTime) {
+        return;
     }
 
     const newShift: Shift = {
@@ -496,17 +558,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       </label>
                       <input
                         id="shiftStart"
-                        type="time"
-                        
+                        type="text"
+                        placeholder="--:--"
                         required
                         className={`p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500`}
                         value={startTime}
                         onChange={(e) => {
+                          handleTimeChange(e, setStartTime);
                           if (isFullDay) {
-                            setStartTime(e.target.value);
-                            setEndTime(e.target.value);
-                          } else {
-                            setStartTime(e.target.value);
+                            handleTimeChange(e, setEndTime);
+                          }
+                        }}
+                        onBlur={() => {
+                          const correctedStartTime = validateAndCorrectTime(startTime);
+                          setStartTime(correctedStartTime); 
+                          if (endTime && timeToMinutes(correctedStartTime) >= timeToMinutes(endTime)) {
+                            setEndTime("");
                           }
                         }}
                       />
@@ -517,14 +584,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       </label>
                       <input
                         id="shiftEnd"
-                        type="time"
+                        type="text"
+                        placeholder="--:--"
                         required
                         disabled={isFullDay}
                         className={`p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500 ${
                           isFullDay ? "bg-gray-200 cursor-not-allowed" : ""
                         }`}
                         value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
+                        onChange={(e) => handleTimeChange(e, setEndTime)}
+                        onBlur={() => {
+                          const correctedEndTime = validateAndCorrectTime(endTime);
+                          if (startTime && timeToMinutes(startTime) >= timeToMinutes(correctedEndTime)) {
+                            setEndTime(""); 
+                          } else {
+                            setEndTime(correctedEndTime);
+                          }
+                        }}
                       />
                     </div>
 
