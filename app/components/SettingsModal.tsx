@@ -291,7 +291,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         throw new Error(data.error || "Failed to create employee.");
       }
 
-      setCreateEmployeeStatus("Employee created successfully!");
+      setCreateEmployeeStatus(t('status.create_employee_success'));
       setEmployeeName("");
       setEmployeeRole("");
       router.refresh();
@@ -775,7 +775,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                           key={genderStr}
                                           className={`px-2 py-1 text-xs rounded ${bgColor}`}
                                         >
-                                          {genderStr}
+                                          {genderStr === Gender.MALE ? t('settings_tab.male') : t('settings_tab.female')}
                                         </span>
                                       );
                                     })}
@@ -836,7 +836,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                       key={day}
                                       className="px-2 py-1 bg-gray-200 text-xs rounded"
                                     >
-                                      {day}
+                                      {translateDay(day)}
                                     </span>
                                   ))}
                                 </div>
@@ -860,7 +860,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                                           key={genderStr}
                                           className={`px-2 py-1 text-xs rounded ${bgColor}`}
                                         >
-                                          {genderStr}
+                                          {genderStr === Gender.MALE ? t('settings_tab.male') : t('settings_tab.female')}
                                         </span>
                                       );
                                     })}
