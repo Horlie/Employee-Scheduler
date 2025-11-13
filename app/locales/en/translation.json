@@ -43,21 +43,20 @@
       "employee_role": "Role",
       "unknown": "Unknown",
       "create_employee": "Create Employee",
-      "full_day_with_time": "Full Day ({{start}} - {{end}})",
-      "errors": {
+      "full_day_with_time": "Full Day ({{start}} - {{end}})"
+    },
+    "errors": {
       "select_at_least_one_day": "Please select at least one day.",
       "create_employee_failed": "Failed to create employee. Please try again.",
       "select_at_least_one_role": "Please select at least one role.",
       "role_settings_missing": "Role settings are missing in the fetched data.",
       "fetch_data_failed": "Failed to fetch data. Please try again.",
-      "user_not_found": "User not found. Please log in again."
-    }
-              
-  },
-  "status": {
+      "user_not_found": "User not found. Please log in again."              
+    },
+    "status": {
       "import_success": "Employees imported successfully!"
       },
-  "tooltip": {
+    "tooltip": {
         "date": "Date",
         "full_day": "Full Day",
         "to": "to",
