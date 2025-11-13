@@ -59,7 +59,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [initialRoleSettings, setInitialRoleSettings] = useState<RoleSettings>(
     initializeRoleSettings()
   );
-
+  
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
@@ -145,6 +145,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       hourToSplitAt: isFullDay ? hourToSplitAt : null,
       gender: selectedGenders.length > 0 ? selectedGenders.join(",") : null, // Store as comma-separated string
     };
+
+    setRoleSettings(prevSettings => {
+      const newSettings = { ...prevSettings }; 
+      
+      const shiftString = newShift.isFullDay
+        ? `FullDay (${newShift.startTime.slice(0, -3)} - ${newShift.endTime.slice(0, -3)})`
+        : `${newShift.startTime.slice(0, -3)}-${newShift.endTime.slice(0, -3)}`;
+
+      newShift.roles.forEach(role => {
+        if (!newSettings[role]) {
+          newSettings[role] = {};
+        }
+        
+        const daySettings: { [key: string]: number } = {};
+        
+        newShift.days.forEach(day => {
+          daySettings[day] = 1; 
+        });
+
+        newSettings[role][shiftString] = daySettings;
+      });
+
+      return newSettings; 
+    });
+
     setPendingShifts([...pendingShifts, newShift]);
     setActiveShifts([...activeShifts, newShift]);
 
