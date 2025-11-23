@@ -602,6 +602,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     const isMultiSelected = multiSelectedCells.some(
         (cell) => cell.employeeId === employee.id.toString() && cell.date.toDateString() === day.toDateString()
     );
+    const isSingleSelected = selectedEmployee?.id === employee.id && 
+                             selectedDate?.toDateString() === day.toDateString();
+    
+    const isSelected = isMultiSelected || isSingleSelected;
     const cellColor =
       cellColors[cellKey] ||
       `${
@@ -609,7 +613,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           ? "bg-indigo-100"
           : `${[0, 6].includes(day.getDay()) ? "bg-blue-50" : "bg-white"}`
       }`;
-    const finalColor = isMultiSelected ? "bg-blue-200 ring-2 ring-inset ring-blue-600" : cellColor;
+    const finalColor = isSelected ? "bg-gray-200 ring-2 ring-inset ring-blue-600" : cellColor;
     const availability = availabilityData.find(
       (a: EmployeeAvailability) =>
         a.employeeId === Number(employee.id) &&
