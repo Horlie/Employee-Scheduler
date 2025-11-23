@@ -73,9 +73,17 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
-        handleCloseTooltip();
+      const target = event.target as HTMLElement;
+
+      if (tooltipRef.current && tooltipRef.current.contains(target)) {
+        return;
       }
+      
+      if (target.closest('.calendar-cell')) {
+        return;
+      }
+
+      handleCloseTooltip();
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -83,6 +91,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+  useEffect(() => {
+    const handleScroll = () => {
+      if (selectedEmployee || multiSelectedCells.length > 0) {
+        handleCloseTooltip();
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { capture: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll, { capture: true });
+    };
+  }, [selectedEmployee, multiSelectedCells]);
 
   const findShiftForDay = (employeeId: number, date: Date): EmployeeAvailability | null => {
     return scheduleData.find(s =>
@@ -610,7 +630,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     return (
       <DroppableCell employee={employee} day={day} role={role}>
         <div
-          className={`flex-shrink-0 border-r border-b border-gray-300 ${finalColor} ${
+          className={`calendar-cell flex-shrink-0 border-r border-b border-gray-300 ${finalColor} ${
             isHovered ? "relative z-[3]" : ""
           }`}
           style={{
@@ -703,7 +723,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         {renderEmployeeRows()}
 
         {( (selectedEmployee && selectedDate) || multiSelectedCells.length > 0 ) && showTooltips && (
-          
+          <div ref={tooltipRef}>
             <EmployeeEventTooltip
               position={tooltipPosition}
               onClose={handleCloseTooltip}
@@ -715,11 +735,11 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               date={multiSelectedCells.length === 0 ? (selectedDate ?? undefined) : undefined}
               onAction={multiSelectedCells.length === 0 ? handleAction : undefined}
             />
-          
+          </div>
         )}
 
         {selectedEmployee && selectedDate && window.location.pathname == "/schedule" && multiSelectedCells.length === 0 && (
-          <div className="absolute" style={{zIndex: 100}}>
+          <div className="absolute" style={{zIndex: 100}} ref={tooltipRef}>
             <ShiftTooltip             
               shift={selectedCell ?? null}
               date={selectedDate}
