@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parse } from "csv-parse/sync";
 import { prisma } from "@/app/lib/prisma";
+import { Gender } from "@/app/types/scheduler"; 
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,16 +36,26 @@ export async function POST(request: NextRequest) {
 
     // Prepare data for insertion
     // Support comma-separated roles in CSV
-    const employeesToCreate = records.map((record: any) => {
+    const allowedGenders = Object.values(Gender);
+    const employeesToCreate = [];
+    for (const [index, record] of records.entries()) {
       const roleString = record[1] || "";
       const rolesArray = roleString.split(",").map((r: string) => r.trim().toUpperCase()).filter((r: string) => r.length > 0);
-      return {
+      const genderValue = record[2];
+      if (!allowedGenders.includes(genderValue)) {
+        return NextResponse.json({
+          error: `Invalid gender value '${genderValue}' in row ${index + 1}. Allowed values: ${allowedGenders.join(", ")}.`,
+          row: index + 1,
+          value: genderValue,
+        }, { status: 400 });
+      }
+      employeesToCreate.push({
         name: record[0],
         roles: rolesArray,
-        gender: record[2],
+        gender: genderValue,
         userId: Number(userId),
-      };
-    });
+      });
+    }
     console.log(employeesToCreate);
     // Insert employees into the database
     await prisma.employee.createMany({
