@@ -69,12 +69,21 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [selectedCell, setSelectedCell] = useState<EmployeeAvailability | null>(null);
+  const [multiSelectedCells, setMultiSelectedCells] = useState<{ employeeId: string; date: Date; employee: Employee }[]>([]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
-        handleCloseTooltip();
+      const target = event.target as HTMLElement;
+
+      if (tooltipRef.current && tooltipRef.current.contains(target)) {
+        return;
       }
+      
+      if (target.closest('.calendar-cell')) {
+        return;
+      }
+
+      handleCloseTooltip();
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -82,6 +91,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+  useEffect(() => {
+    const handleScroll = () => {
+      if (selectedEmployee || multiSelectedCells.length > 0) {
+        handleCloseTooltip();
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { capture: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll, { capture: true });
+    };
+  }, [selectedEmployee, multiSelectedCells]);
 
   const findShiftForDay = (employeeId: number, date: Date): EmployeeAvailability | null => {
     return scheduleData.find(s =>
@@ -97,22 +118,47 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   ) => {
     const cellElement = event.currentTarget;
     const rect = cellElement.getBoundingClientRect();
-    const scrollTop = window.scrollY;
-    const scrollLeft = window.scrollX;
-    setSelectedEmployee(employee);
-    setSelectedDate(date);
-    setTooltipPosition({
-      top: rect.top + scrollTop + 20,
-      left: rect.left + scrollLeft + rect.width / 2,
-    });
-    const existingShift = findShiftForDay(employee.id, date);
-    setSelectedCell(existingShift);
+   
+
+    if (event.ctrlKey || event.metaKey) {
+      setSelectedEmployee(null);
+      setSelectedDate(null);
+      setSelectedCell(null);
+
+      setMultiSelectedCells((prev) => {
+        const exists = prev.find(
+          (cell) => cell.employeeId === employee.id.toString() && cell.date.toDateString() === date.toDateString()
+        );
+
+        if (exists) {
+          return prev.filter((cell) => cell !== exists);
+        } else {
+          setTooltipPosition({
+            top: rect.top, 
+            left: rect.left + rect.width / 2,
+          });
+          return [...prev, { employeeId: employee.id.toString(), date, employee }];
+        }
+      });
+    } else {
+      setMultiSelectedCells([]);
+
+      setSelectedEmployee(employee);
+      setSelectedDate(date);
+      setTooltipPosition({
+        top: rect.top, 
+        left: rect.left + rect.width / 2,
+      });
+      const existingShift = findShiftForDay(employee.id, date);
+      setSelectedCell(existingShift);
+    }
   };
 
   const handleCloseTooltip = () => {
     setSelectedCell(null);
     setSelectedEmployee(null);
     setSelectedDate(null);
+    setMultiSelectedCells([]);
   };
 
   const handleSaveShift = (shiftToSave: EmployeeAvailability) => {
@@ -144,7 +190,76 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     setScheduleData(prevScheduleData => prevScheduleData.filter(s => s.id !== shiftId));
     handleCloseTooltip();
   };
+  const handleMultiAction = async (
+    action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
+    startTimeStr: string,
+    endTimeStr: string,
+    isFullDay: boolean
+  ) => {
+    const promises = multiSelectedCells.map(async (cell) => {
+      const { employeeId, date } = cell;
+      const cellKey = `${employeeId}-${fromZonedTime(date, "UTC").toISOString().split("T")[0]}`;
 
+      if (action === "delete") {
+        const availability = availabilityData.find(
+          (a) => a.employeeId === Number(employeeId) && new Date(a.startDate).toDateString() === date.toDateString()
+        );
+        if (availability) {
+           try {
+             await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${fromZonedTime(new Date(availability.startDate), "UTC").toISOString()}`, { method: "DELETE" });
+             setCellColors((prev) => { const n = { ...prev }; delete n[cellKey]; return n; });
+             setAvailabilityData((prev) => prev.filter(a => a.id !== availability.id));
+           } catch (e) { console.error(e); }
+        }
+      } else {
+        const startDate = new Date(date);
+        const finishDate = new Date(date);
+
+        if (isFullDay) {
+            startDate.setHours(0, 0, 0, 0);
+            finishDate.setHours(23, 59, 59, 999);
+        } else {
+            const [sh, sm] = startTimeStr.split(":").map(Number);
+            const [eh, em] = endTimeStr.split(":").map(Number);
+            startDate.setHours(sh, sm, 0, 0);
+            finishDate.setHours(eh, em, 0, 0);
+        }
+
+        let newColor = "";
+        if (action === "unavailable") newColor = "bg-yellow-200";
+        if (action === "unreachable") newColor = "bg-red-200";
+        if (action === "preferable") newColor = "bg-green-200";
+        if (action === "vacation") newColor = "bg-blue-200";
+
+        try {
+            const res = await fetch("/api/employee-availability", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ employeeId: Number(employeeId), startDate, finishDate, status: action }),
+            });
+
+            if(res.ok) {
+                setCellColors((prev) => ({ ...prev, [cellKey]: newColor }));
+                setAvailabilityData(prev => prev.filter(a => !(a.employeeId === Number(employeeId) && new Date(a.startDate).toDateString() === date.toDateString())));
+                
+                const newAvail: EmployeeAvailability = {
+                    id: Date.now() + Math.random(),
+                    employeeId: Number(employeeId),
+                    startDate: startDate.toISOString(),
+                    finishDate: finishDate.toISOString(),
+                    status: action,
+                    isFullDay: isFullDay,
+                };
+                setAvailabilityData((prev) => [...prev, newAvail]);
+            }
+        } catch (e) { console.error(e); }
+      }
+    });
+
+    await Promise.all(promises);
+    setMultiSelectedCells([]);
+    handleCloseTooltip();
+  };
   const handleAction = async (
     action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
     startDate: Date,
@@ -484,7 +599,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   const renderAvailabilityTile = (employee: Employee, day: Date, role: string) => {
     const cellKey = `${employee.id}-${fromZonedTime(day, "UTC").toISOString().split("T")[0]}`;
-
+    const isMultiSelected = multiSelectedCells.some(
+        (cell) => cell.employeeId === employee.id.toString() && cell.date.toDateString() === day.toDateString()
+    );
+    const isSingleSelected = selectedEmployee?.id === employee.id && 
+                             selectedDate?.toDateString() === day.toDateString();
+    
+    const isSelected = isMultiSelected || isSingleSelected;
     const cellColor =
       cellColors[cellKey] ||
       `${
@@ -492,7 +613,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           ? "bg-indigo-100"
           : `${[0, 6].includes(day.getDay()) ? "bg-blue-50" : "bg-white"}`
       }`;
-
+    const finalColor = isSelected ? "bg-gray-200 ring-2 ring-inset ring-blue-600" : cellColor;
     const availability = availabilityData.find(
       (a: EmployeeAvailability) =>
         a.employeeId === Number(employee.id) &&
@@ -513,13 +634,15 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     return (
       <DroppableCell employee={employee} day={day} role={role}>
         <div
-          className={`flex-shrink-0 border-r border-b border-gray-300 ${cellColor} ${
+          className={`calendar-cell flex-shrink-0 border-r border-b border-gray-300 ${finalColor} ${
             isHovered ? "relative z-[3]" : ""
           }`}
           style={{
             width: `${cellWidth}px`,
             height: "50px",
             boxShadow: isHovered ? "0 0 12px 1px lightblue" : "none",
+            cursor: "pointer", 
+            userSelect: "none" 
           }}
           onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), role)}
           onMouseLeave={handleCellLeave}
@@ -542,7 +665,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           )}
           {schedule && (
               <DraggableShift shift={schedule}>
-
               <div className="w-full h-full flex items-center justify-center text-xs px-1">
                 {isScheduleFullDay?.get(schedule.id) ? (
                   <span className="text-gray-600 font-medium">All Day</span>
@@ -560,7 +682,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       </DroppableCell>
     );
   };
-
   const renderEmployeeRows = () => (
     <div>
       {groupedEmployees.map(([role, employees], groupIndex) => (
@@ -604,18 +725,25 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           </>
         )}
         {renderEmployeeRows()}
-        {selectedEmployee && selectedDate && showTooltips && (
+
+        {( (selectedEmployee && selectedDate) || multiSelectedCells.length > 0 ) && showTooltips && (
           <div ref={tooltipRef}>
             <EmployeeEventTooltip
-              employee={selectedEmployee}
-              date={selectedDate}
-              onAction={handleAction}
               position={tooltipPosition}
+              onClose={handleCloseTooltip}
+              
+              selectedCount={multiSelectedCells.length}
+              onMultiAction={multiSelectedCells.length > 0 ? handleMultiAction : undefined}
+
+              employee={multiSelectedCells.length === 0 ? (selectedEmployee ?? undefined) : undefined}
+              date={multiSelectedCells.length === 0 ? (selectedDate ?? undefined) : undefined}
+              onAction={multiSelectedCells.length === 0 ? handleAction : undefined}
             />
           </div>
         )}
-        {selectedEmployee && selectedDate && window.location.pathname == "/schedule" && (
-          <div ref={tooltipRef}>
+
+        {selectedEmployee && selectedDate && window.location.pathname == "/schedule" && multiSelectedCells.length === 0 && (
+          <div className="absolute" style={{zIndex: 100}} ref={tooltipRef}>
             <ShiftTooltip             
               shift={selectedCell ?? null}
               date={selectedDate}
