@@ -54,6 +54,7 @@ interface CustomSchedulerProps {
   onSaveChanges?: () => void;
   onCancelChanges?: () => void;
   onScheduleChange?: () => void;
+  enableDragAndDrop?: boolean; 
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
@@ -76,6 +77,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   onSaveChanges = () => {},
   onCancelChanges = () => {},
   onScheduleChange = () => {},
+  enableDragAndDrop = true, 
   
 
 }) => {
@@ -427,6 +429,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
               isScheduleFullDay={isScheduleFullDay}
               isPlanningFullDay={isPlanningFullDay}
               onScheduleChange={onScheduleChange}
+              enableDragAndDrop={enableDragAndDrop}
             />
           </div>
         </div>

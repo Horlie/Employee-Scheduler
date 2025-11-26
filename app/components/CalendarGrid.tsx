@@ -31,6 +31,7 @@ interface CalendarGridProps {
   isScheduleFullDay: Map<string | number, boolean>;
   isPlanningFullDay: Map<string | number, boolean>;
   onScheduleChange: () => void;
+  enableDragAndDrop?: boolean;
 }
 const DroppableCell: React.FC<{ employee: Employee; day: Date; children: React.ReactNode; role: string }> = ({ employee, day, children, role }) => {
   const { setNodeRef } = useDroppable({
@@ -62,7 +63,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   showTooltips,
   isScheduleFullDay,
   isPlanningFullDay,
-  onScheduleChange
+  onScheduleChange,
+  enableDragAndDrop = true 
 }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -631,6 +633,19 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
     const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
 
+    const renderShiftContent = (shift: EmployeeAvailability, isFullDayMap: Map<string | number, boolean>) => (
+      <div className="w-full h-full flex items-center justify-center text-xs px-1">
+        {isFullDayMap?.get(shift.id) ? (
+          <span className="text-gray-600 font-medium">All Day</span>
+        ) : (
+          <span className="text-gray-700 text-center">
+            {`${formatTime(new Date(shift.startDate))} ${formatTime(
+              new Date(shift.finishDate)
+            )}`}
+          </span>
+        )}
+      </div>
+    );
     return (
       <DroppableCell employee={employee} day={day} role={role}>
         <div
@@ -642,41 +657,50 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             height: "50px",
             boxShadow: isHovered ? "0 0 12px 1px lightblue" : "none",
             cursor: "pointer", 
-            userSelect: "none" 
+            userSelect: "none"
           }}
           onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), role)}
           onMouseLeave={handleCellLeave}
           onClick={(e) => handleCellClick(employee, day, e)}
         >
           {availability && (
-            <DraggableShift shift={availability}>
-              <div className="w-full h-full flex items-center justify-center text-xs px-1">
-                {isPlanningFullDay?.get(availability.id) ? (
-                  <span className="text-gray-600 font-medium">All Day</span>
-                ) : (
-                  <span className="text-gray-700 text-center">
-                    {`${formatTime(new Date(availability.startDate))} ${formatTime(
-                      new Date(availability.finishDate)
-                    )}`}
-                  </span>
-                )}
-              </div>
-            </DraggableShift>
+            enableDragAndDrop ? (
+              <DraggableShift shift={availability}>
+                <div className="w-full h-full flex items-center justify-center text-xs px-1">
+                  {isPlanningFullDay?.get(availability.id) ? (
+                    <span className="text-gray-600 font-medium">All Day</span>
+                  ) : (
+                    <span className="text-gray-700 text-center">
+                      {`${formatTime(new Date(availability.startDate))} ${formatTime(
+                        new Date(availability.finishDate)
+                      )}`}
+                    </span>
+                  )}
+                </div>
+              </DraggableShift>
+            ) : (
+              renderShiftContent(availability, isPlanningFullDay)
+            )
           )}
           {schedule && (
-              <DraggableShift shift={schedule}>
-              <div className="w-full h-full flex items-center justify-center text-xs px-1">
-                {isScheduleFullDay?.get(schedule.id) ? (
-                  <span className="text-gray-600 font-medium">All Day</span>
-                ) : (
-                  <span className="text-gray-700 text-center">
-                    {`${formatTime(new Date(schedule.startDate))} ${formatTime(
-                      new Date(schedule.finishDate)
-                    )}`}
-                  </span>
-                )}
-              </div>
-            </DraggableShift>
+            enableDragAndDrop ? (
+                <DraggableShift shift={schedule}>
+
+                <div className="w-full h-full flex items-center justify-center text-xs px-1">
+                  {isScheduleFullDay?.get(schedule.id) ? (
+                    <span className="text-gray-600 font-medium">All Day</span>
+                  ) : (
+                    <span className="text-gray-700 text-center">
+                      {`${formatTime(new Date(schedule.startDate))} ${formatTime(
+                        new Date(schedule.finishDate)
+                      )}`}
+                    </span>
+                  )}
+                </div>
+              </DraggableShift>
+            ) : (
+              renderShiftContent(schedule, isScheduleFullDay)
+            )
           )}
         </div>
       </DroppableCell>

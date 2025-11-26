@@ -143,6 +143,7 @@ export default function Planning() {
           isPlanningFullDay={isFullDay}
           isScheduleFullDay={new Map()}
           onSaveChanges={handleSaveChanges}
+          enableDragAndDrop={false} 
         />
       </div>
     </>
