@@ -651,7 +651,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   {isFullDay && (
                     <div className="mb-2 flex justify-center space-x-12">
                       <div className="grid">
-                        <label htmlFor="employeeSplit">{t('settings_tab.when_to_split_shift')}</label>
+                        <label htmlFor="employeeSplit">{t('settings_tab.when_to_split')}</label>
                         <input
                         id="employeeSplit"
                         type="number"

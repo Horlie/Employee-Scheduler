@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface SchedulerHeaderProps {
   currentDate: Date;
@@ -39,10 +40,11 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
 
 
 }) => {
+  const { t, i18n } = useTranslation();
   return (
     <div className="relative flex bg-gray-100 justify-between items-center px-10 py-5 border-b border-gray-300">
       <div className="text-left ml-3 text-2xl text-gray-700 font-bold uppercase tracking-widest">
-        {currentDate.toLocaleString("en-GB", {
+        {currentDate.toLocaleString(i18n.language, {
           month: "long",
           year: "numeric",
         })}
@@ -61,7 +63,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
               className="px-3 py-1.5 bg-white font-medium border border-gray-300 hover:bg-gray-100"
               onClick={onToday}
             >
-              Current Month
+              {t('scheduler_header.current_month')}
             </button>
             <button
               className="px-3 py-1.5 bg-white rounded-r text-gray-400 pb-1.5 border border-l-0 border-gray-300 hover:text-gray-500 hover:bg-gray-100"
@@ -78,7 +80,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
                 className="px-3 py-1.5 ml-2 text-white font-medium rounded-md bg-indigo-600 hover:bg-indigo-700"
                 onClick={onSettingsClick}
               >
-                Settings
+                {t('scheduler_header.settings')}
               </button>
             </>
           )}
@@ -87,18 +89,18 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
               <div className="w-px h-py bg-gray-300 mx-2"></div>
               {isDirty ? (
                 <div className="bg-white p-2 rounded-lg shadow-md flex items-center gap-2 border border-gray-200">
-                  <p className="text-sm text-gray-600 mr-2 px-2">You have unsaved changes.</p>
+                  <p className="text-sm text-gray-600 mr-2 px-2">{t('scheduler_header.unsaved_changes')}</p>
                   <button
                     onClick={onCancelChanges}
                     className="px-4 py-2 text-sm font-semibold bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                   >
-                    Cancel
+                    {t('scheduler_header.cancel')}
                   </button>
                   <button
                     onClick={onSaveChanges}
                     className="px-4 py-2 text-sm font-semibold bg-teal-500 text-white rounded-md shadow-sm hover:bg-teal-600"
                   >
-                    Save Changes
+                    {t('scheduler_header.save_changes')}
                   </button>
                 </div>
               ) : (
@@ -111,7 +113,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
                     onClick={onSolveClick}
                     disabled={loading}
                   >
-                    {loading ? "Solving..." : "Solve"}
+                    {loading ? t('scheduler_header.solving') : t('scheduler_header.solve')}
                   </button>
 
                   <button
@@ -119,7 +121,7 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
                     disabled={loading || isDownloading}
                     className="px-4 py-2 ml-2 font-semibold bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400"
                   >
-                    {isDownloading ? "Creating PDF..." : "Download as PDF"}
+                    {isDownloading ? t('scheduler_header.creating_pdf') : t('scheduler_header.download_pdf')}
                   </button>
                 </>
               )}

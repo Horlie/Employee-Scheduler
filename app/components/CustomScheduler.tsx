@@ -11,6 +11,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import { useEmployee } from "../context/EmployeeContext";
 
 import { generateSchedulePDF } from "./SchedulePDFGenerator";
+import { useTranslation } from "react-i18next";
 
 // Add this function near the top of the file, after imports
 function isLatvianHoliday(date: Date): boolean {
@@ -55,6 +56,7 @@ interface CustomSchedulerProps {
   onCancelChanges?: () => void;
   onScheduleChange?: () => void;
   enableDragAndDrop?: boolean; 
+  
 }
 
 const CustomScheduler: React.FC<CustomSchedulerProps> = ({
@@ -92,6 +94,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const { setEmployees } = useEmployee();
+  const { t } = useTranslation();
 
   const handleEditClick = useCallback((employee: Employee) => {
     setEditingEmployee(employee);
@@ -273,7 +276,7 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
     <div className="border border-gray-300 h-[55px] flex items-center relative border-b-2">
       <input
         type="text"
-        placeholder="Search"
+        placeholder={t('scheduler.search_placeholder')}
         className="w-full h-full ml-3 px-2 pr-8 border-0 focus:ring-0 focus:outline-none"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
@@ -362,11 +365,11 @@ const CustomScheduler: React.FC<CustomSchedulerProps> = ({
       .then((saveData) => {
         console.log("Schedule successfully saved to database.");
         needsRefresh(true);
-        alert("Schedule solved and saved successfully!");
+        alert(t('scheduler.success_solved'));
       })
       .catch((error) => {
         console.error("Error solving schedule:", error);
-        alert(`An error occurred while solving the schedule: ${error.message}`);
+        alert(`${t('scheduler.error_solving')}: ${error.message}`);
       })
       .finally(() => {
         setLoading(false);

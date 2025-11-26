@@ -43,6 +43,7 @@
       "employee_role": "Role",
       "unknown": "Unknown",
       "create_employee": "Create Employee",
+      "create_employee_success": "Employee created successfully!",
       "full_day_with_time": "Full Day ({{start}} - {{end}})"
     },
     "errors": {
@@ -54,6 +55,7 @@
       "user_not_found": "User not found. Please log in again."              
     },
     "status": {
+      "create_employee_success": "Employee created successfully!",
       "import_success": "Employees imported successfully!"
       },
     "tooltip": {
@@ -64,6 +66,79 @@
         "unreachable": "Unreachable",
         "preferable": "Preferable",
         "vacation": "Vacation",
-        "delete": "Delete"
-      }
+        "delete": "Delete",
+        "cells_selected": "cells selected" 
+      },
+    "calendar": {
+      "week": "Week",
+      "all_day": "All Day",
+      "error_move_role": "You can only move shifts within the same role group (e.g., Nurse to Nurse).",
+      "error_slot_occupied": "This time slot is already occupied. Cannot move the shift here."
+    },
+    "scheduler": {
+      "search_placeholder": "Search",
+      "success_solved": "Schedule solved and saved successfully!",
+      "error_solving": "An error occurred while solving the schedule"
+    },
+    "edit_modal": {
+      "title": "Edit Employee",
+      "name": "Name",
+      "roles": "Roles (comma-separated)",
+      "roles_placeholder": "e.g., Nurse, Doctor",
+      "gender": "Gender",
+      "cancel": "Cancel",
+      "save": "Save Changes"
+    },
+    "landing": {
+      "title": "Employee Scheduler",
+      "description": "Efficiently manage your employee schedules with our intuitive web application. Streamline your workforce planning and optimize productivity.",
+      "login_button": "Login to Get Started"
+    },
+    "login_modal": {
+      "title": "Login",
+      "email_placeholder": "Login",
+      "password_placeholder": "Password",
+      "login_button": "Login",
+      "logging_in": "Logging in...",
+      "close": "Close",
+      "error_generic": "An error occurred during login"
+    },
+    "navigation": {
+      "title": "EMPLOYEE SCHEDULER",
+      "schedule": "Schedule",
+      "planning": "Planning",
+      "logout": "Logout"
+    },
+    "rate_tooltip": {
+      "save": "Save",
+      "error_invalid_number": "Please enter a valid number with one decimal place.",
+      "error_range": "Rate must be between 0.0 and 1.0.",
+      "error_failed_update": "Failed to update rate.",
+      "error_unexpected": "An unexpected error occurred."
+    },
+    "shift_tooltip": {
+      "edit_shift": "Edit Shift",
+      "add_shift": "Add Shift",
+      "full_day": "Full Day",
+      "start": "Start",
+      "end": "End",
+      "delete": "Delete",
+      "save": "Save"
+    },
+    "employee_column": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "total": "Total"
+    },
+    "scheduler_header": {
+      "current_month": "Current Month",
+      "settings": "Settings",
+      "unsaved_changes": "You have unsaved changes.",
+      "cancel": "Cancel",
+      "save_changes": "Save Changes",
+      "solving": "Solving...",
+      "solve": "Solve",
+      "creating_pdf": "Creating PDF...",
+      "download_pdf": "Download as PDF"
+    }
 }

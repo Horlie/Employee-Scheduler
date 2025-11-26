@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import LoadingSpinner from "./LoadingSpinner";
 import LanguageSwitcher from "./LanguageSwitcher"; 
+import { useTranslation } from "react-i18next";
+
 
 interface NavigationProps {
   isLoggedIn: boolean;
@@ -18,6 +20,7 @@ const inactivePageCss =
 
 const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePage }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleNavigation = () => {};
 
@@ -30,7 +33,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePag
         <div className="w-full">
           <div className="flex justify-between items-center h-16">
             <div className="flex-shrink-0 flex items-center">
-              <span className="text-2xl font-semibold text-gray-800">EMPLOYEE SCHEDULER</span>
+              <span className="text-2xl font-semibold text-gray-800">{t('navigation.title')}</span>
             </div>
             <div className="flex space-x-8">
               <Link
@@ -38,14 +41,14 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePag
                 className={activePage === "schedule" ? activePageCss : inactivePageCss}
                 href="/schedule"
               >
-                Schedule
+                {t('navigation.schedule')}
               </Link>
               <Link
                 onClick={() => handleNavigation()}
                 className={activePage === "planning" ? activePageCss : inactivePageCss}
                 href="/planning"
               >
-                Planning
+                {t('navigation.planning')}
               </Link>
             </div>
             <div className="flex items-center pr-12 gap-6">
@@ -54,7 +57,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, activePag
                 onClick={onLogout}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
               >
-                Logout
+                {t('navigation.logout')}
               </button>
             </div>
           </div>

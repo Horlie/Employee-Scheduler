@@ -7,6 +7,7 @@ import EmployeeEventTooltip from "./EmployeeEventTooltip";
 import { DndContext, DragEndEvent, useDroppable } from '@dnd-kit/core';
 import { DraggableShift } from './DraggableShift';
 import { ShiftTooltip } from "./ShiftTooltip";
+import { useTranslation } from "react-i18next";
 
 interface CalendarGridProps {
   groupedEmployees: [string, Employee[]][];
@@ -72,7 +73,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [selectedCell, setSelectedCell] = useState<EmployeeAvailability | null>(null);
   const [multiSelectedCells, setMultiSelectedCells] = useState<{ employeeId: string; date: Date; employee: Employee }[]>([]);
-
+  const { t } = useTranslation();
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -424,7 +426,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
     const draggedShiftEmployee = employees.find(e => e.id === draggedShift.employeeId);
     if (!draggedShiftEmployee?.roles.includes(targetRole)) {
-      alert("You can only move shifts within the same role group (e.g., Nurse to Nurse).");
+      alert(t('calendar.error_move_role'));
       return;
     }
     
@@ -436,7 +438,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     );
 
     if (shiftsInTargetCell.length > 0) {
-      alert("This time slot is already occupied. Cannot move the shift here.");
+      alert(t('calendar.error_slot_occupied'));
       return;
     }
 
@@ -514,7 +516,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             <div className="border-gray-300 w-6 relative bg-gray-100 flex-shrink-0">
               <div className="absolute top-0 left-0 w-6 h-20 flex items-center justify-center bg-gray-100 border-r border-gray-300">
                 <span className="transform -rotate-90 origin-center whitespace-nowrap text-xs text-gray-500 font-medium">
-                  Week {getWeek(day)}
+                  {t('calendar.week')} {getWeek(day)}
                 </span>
               </div>
             </div>
@@ -561,7 +563,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             <div className="border-gray-300 w-6 relative bg-gray-100 flex-shrink-0">
               <div className="absolute bottom-0 left-0 w-6 h-20 flex items-center justify-center bg-gray-100 border-r border-gray-300">
                 <span className="transform -rotate-90 origin-center whitespace-nowrap text-xs text-gray-500 font-medium">
-                  Week {getWeek(day)}
+                  {t('calendar.week')} {getWeek(day)}
                 </span>
               </div>
             </div>
@@ -636,7 +638,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     const renderShiftContent = (shift: EmployeeAvailability, isFullDayMap: Map<string | number, boolean>) => (
       <div className="w-full h-full flex items-center justify-center text-xs px-1">
         {isFullDayMap?.get(shift.id) ? (
-          <span className="text-gray-600 font-medium">All Day</span>
+          <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
         ) : (
           <span className="text-gray-700 text-center">
             {`${formatTime(new Date(shift.startDate))} ${formatTime(
@@ -668,7 +670,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               <DraggableShift shift={availability}>
                 <div className="w-full h-full flex items-center justify-center text-xs px-1">
                   {isPlanningFullDay?.get(availability.id) ? (
-                    <span className="text-gray-600 font-medium">All Day</span>
+                    <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
                   ) : (
                     <span className="text-gray-700 text-center">
                       {`${formatTime(new Date(availability.startDate))} ${formatTime(
@@ -688,7 +690,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
                 <div className="w-full h-full flex items-center justify-center text-xs px-1">
                   {isScheduleFullDay?.get(schedule.id) ? (
-                    <span className="text-gray-600 font-medium">All Day</span>
+                    <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
                   ) : (
                     <span className="text-gray-700 text-center">
                       {`${formatTime(new Date(schedule.startDate))} ${formatTime(
