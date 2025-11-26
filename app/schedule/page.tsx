@@ -78,7 +78,8 @@ export default function Schedule() {
           finishDate: new Date(shift.end),
           status: "scheduled",
           employee,
-          role: (shift as any).role // Store the role for filtering
+          role: (shift as any).role, // Store the role for filtering
+          isFullDay: shift.isFullDay, 
         } as EmployeeAvailability & { role?: string };
       })
       .filter((shift): shift is EmployeeAvailability => shift !== null); 
