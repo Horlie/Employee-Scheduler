@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+
 
 interface RateToolTipProps {
   employeeId: string;
@@ -18,6 +20,7 @@ const RateToolTip: React.FC<RateToolTipProps> = ({
   const [rate, setRate] = useState<string>(currentRate.toFixed(1));
   const [error, setError] = useState<string>("");
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -26,14 +29,14 @@ const RateToolTip: React.FC<RateToolTipProps> = ({
       setRate(value);
       setError("");
     } else {
-      setError("Please enter a valid number with one decimal place.");
+      setError(t('rate_tooltip.error_invalid_number'));
     }
   };
 
   const handleSubmit = async () => {
     const parsedRate = parseFloat(rate);
     if (isNaN(parsedRate) || parsedRate < 0.0 || parsedRate > 1.0) {
-      setError("Rate must be between 0.0 and 1.0.");
+      setError(t('rate_tooltip.error_range'));
       return;
     }
 
@@ -54,11 +57,11 @@ const RateToolTip: React.FC<RateToolTipProps> = ({
         onRateUpdate(parsedRate);
         onClose();
       } else {
-        setError(data.error || "Failed to update rate.");
+        setError(data.error || t('rate_tooltip.error_failed_update'));
       }
     } catch (err) {
       console.error("Error updating rate:", err);
-      setError("An unexpected error occurred.");
+      setError(t('rate_tooltip.error_unexpected'));
     }
   };
 
@@ -116,7 +119,7 @@ const RateToolTip: React.FC<RateToolTipProps> = ({
         onClick={handleSubmit}
         className="bg-indigo-500 text-white px-2 py-1 ml-2 rounded hover:bg-indigo-600"
       >
-        Save
+        {t('rate_tooltip.save')}
       </button>
     </div>
   );

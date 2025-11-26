@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -12,6 +14,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,11 +45,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-white rounded-lg p-8 w-96">
-        <h2 className="text-2xl font-bold mb-4">Login</h2>
+        <h2 className="text-2xl font-bold mb-4">{t('login_modal.title')}</h2>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="Login"
+            placeholder={t('login_modal.email_placeholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full mb-2 p-2 border rounded"
@@ -54,7 +57,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t('login_modal.password_placeholder')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full mb-4 p-2 border rounded"
@@ -72,7 +75,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
           onClick={onClose}
           className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
         >
-          Close
+          {t('login_modal.close')}
         </button>
       </div>
     </div>

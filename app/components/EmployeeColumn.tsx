@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, type JSX } from "react
 import { Employee, Gender } from "../types/scheduler";
 import RateToolTip from "./RateToolTip";
 import { useEmployee } from "../context/EmployeeContext";
+import { useTranslation } from "react-i18next";
 
 interface EmployeeColumnProps {
   groupedEmployees: [string, Employee[]][];
@@ -25,6 +26,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
   const [tooltipEmployeeId, setTooltipEmployeeId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const { setEmployees, activeMonth, availabilityData } = useEmployee();
+  const { t } = useTranslation();
 
   const handleRateUpdate = (employeeId: string, newRate: number) => {
     // Update global EmployeeContext
@@ -198,13 +200,13 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                         onClick={() => onEditClick(employee)}
                         className="block px-4 py-2 text-left w-full hover:bg-gray-100"
                       >
-                        Edit
+                        {t('employee_column.edit')}
                       </button>
                       <button
                         onClick={() => handleDelete(employee.id.toString())}
                         className="block px-4 py-2 text-left w-full hover:bg-gray-100 text-red-500"
                       >
-                        Delete
+                        {t('employee_column.delete')}
                       </button>
                     </div>
                   )}
@@ -214,7 +216,7 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
             })}
             <div className="flex items-center h-[54px] bg-gray-100 border-r border-gray-300 border-t border-b border-l bg-white">
               <span className="text-md font-medium text-gray-600 pl-3">
-                Total: {employees.length}
+                {t('employee_column.total')}: {employees.length}
               </span>
             </div>
           </React.Fragment>

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import { Employee, EmployeeAvailability, TimefoldShift } from "../types/scheduler";
 import { formatInTimeZone } from "date-fns-tz";
+import { useTranslation } from "react-i18next";
 
 export default function Schedule() {
   const {
@@ -31,6 +32,7 @@ export default function Schedule() {
   const [originalScheduleData, setOriginalScheduleData] = useState<EmployeeAvailability[]>([]);
   const [originalCellColors, setOriginalCellColors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
+  const { t } = useTranslation();
 
  
   const getEmployeeIdByName = useCallback((name: string, currentEmployees: Employee[]) => {
@@ -237,7 +239,7 @@ export default function Schedule() {
 
     } catch (error) {
       console.error(error);
-      alert('Error saving changes.');
+      alert(t('shift_tooltip.error_saving_changes'));
     } finally {
       setIsLoading(false);
     }

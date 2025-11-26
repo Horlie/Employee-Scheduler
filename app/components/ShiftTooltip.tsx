@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { EmployeeAvailability } from '../types/scheduler';
+import { useTranslation } from "react-i18next";
+
 
 interface ShiftTooltipProps {
   shift: EmployeeAvailability | null;
@@ -39,6 +41,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
   const [isFullDay, setIsFullDay] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (shift) {
@@ -112,7 +115,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
         </button>
 
         <h3 className="text-lg font-bold text-slate-800 mb-1">
-          {shift ? 'Edit Shift' : 'Add Shift'}
+          {shift ? t('shift_tooltip.edit_shift') : t('shift_tooltip.add_shift')}
         </h3>
         <p className="text-sm text-slate-500 mb-4">
           {date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -128,14 +131,14 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
               className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
             />
             <label htmlFor="full-day" className="ml-2 block text-sm font-medium text-slate-700">
-              Full Day
+              {t('shift_tooltip.full_day')}
             </label>
           </div>
 
           <div className="flex items-center justify-between space-x-2">
             <div>
               <label htmlFor="start-time" className="block text-sm font-medium text-slate-700">
-                Start
+                {t('shift_tooltip.start')}
               </label>
               <input
                 type="time"
@@ -147,7 +150,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
             </div>
             <div>
               <label htmlFor="end-time" className="block text-sm font-medium text-slate-700">
-                End
+                {t('shift_tooltip.end')}
               </label>
               <input
                 type="time"
@@ -167,14 +170,14 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
                     onClick={handleDelete}
                     className="text-sm font-medium text-red-600 hover:text-red-800"
                 >
-                    Delete
+                    {t('shift_tooltip.delete')}
                 </button>
             ) : <div />}
              <button
                 onClick={handleSave}
                 className="inline-flex justify-center rounded-md border border-transparent bg-sky-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
             >
-                Save
+                {t('shift_tooltip.save')}
             </button>
         </div>
       </div>

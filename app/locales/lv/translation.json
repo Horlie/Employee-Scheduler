@@ -43,6 +43,7 @@
     "applying": "Piemēro...",
     "when_to_split": "Kad sadalīt maiņu?",
     "at_what_hour_to_split": "Kurā stundā sadalīt?",
+    "create_employee_success": "Darbinieks veiksmīgi izveidots!",
     "full_day_with_time": "Diennakts maiņa ({{start}} - {{end}})"
     },
     "errors": {
@@ -54,6 +55,7 @@
     "user_not_found": "Lietotājs nav atrasts. Lūdzu, piesakieties vēlreiz."
     },
     "status": {
+        "create_employee_success": "Darbinieks veiksmīgi izveidots!",
         "import_success": "Darbinieki veiksmīgi importēti!"
     },
     "tooltip": {
@@ -64,7 +66,80 @@
       "unreachable": "Nav sasniedzams",
       "preferable": "Vēlams",
       "vacation": "Atvaļinājums",
-      "delete": "Dzēst"
+      "delete": "Dzēst",
+      "cells_selected": "šūnas izvēlētas"
+    },
+    "calendar": {
+      "week": "Nedēļa",
+      "all_day": "Visa diena",
+      "error_move_role": "Maiņas var pārvietot tikai vienas lomas grupas ietvaros (piem., Māsa uz Māsa).",
+      "error_slot_occupied": "Šis laika intervāls jau ir aizņemts. Maiņu nevar pārvietot šeit."
+    },
+    "scheduler": {
+      "search_placeholder": "Meklēt",
+      "success_solved": "Grafiks veiksmīgi izveidots un saglabāts!",
+      "error_solving": "Radās kļūda, veidojot grafiku"
+    },
+    "edit_modal": {
+      "title": "Rediģēt darbinieku",
+      "name": "Vārds",
+      "roles": "Lomas (atdalītas ar komatu)",
+      "roles_placeholder": "piem., Māsa, Ārsts",
+      "gender": "Dzimums",
+      "cancel": "Atcelt",
+      "save": "Saglabāt izmaiņas"
+    },
+    "landing": {
+      "title": "Darbinieku plānotājs",
+      "description": "Efektīvi pārvaldiet darbinieku grafikus ar mūsu intuitīvo tīmekļa lietotni. Optimizējiet darbaspēka plānošanu un produktivitāti.",
+      "login_button": "Pieteikties, lai sāktu"
+    },
+    "login_modal": {
+      "title": "Pieteikties",
+      "email_placeholder": "Lietotājvārds",
+      "password_placeholder": "Parole",
+      "login_button": "Pieteikties",
+      "logging_in": "Notiek pieteikšanās...",
+      "close": "Aizvērt",
+      "error_generic": "Pieteikšanās laikā radās kļūda"
+    },
+    "navigation": {
+      "title": "DARBINIEKU PLĀNOTĀJS",
+      "schedule": "Grafiks",
+      "planning": "Plānošana",
+      "logout": "Iziet"
+    },
+    "rate_tooltip": {
+      "save": "Saglabāt",
+      "error_invalid_number": "Lūdzu, ievadiet derīgu skaitli ar vienu zīmi aiz komata.",
+      "error_range": "Likmei jābūt no 0.0 līdz 1.0.",
+      "error_failed_update": "Neizdevās atjaunināt likmi.",
+      "error_unexpected": "Radās neparedzēta kļūda."
+    },
+    "shift_tooltip": {
+      "edit_shift": "Rediģēt maiņu",
+      "add_shift": "Pievienot maiņu",
+      "full_day": "Pilna diena",
+      "start": "Sākums",
+      "end": "Beigas",
+      "delete": "Dzēst",
+      "save": "Saglabāt"
+    },
+    "employee_column": {
+      "edit": "Rediģēt",
+      "delete": "Dzēst",
+      "total": "Kopā"
+    },
+    "scheduler_header": {
+      "current_month": "Tekošais mēnesis",
+      "settings": "Iestatījumi",
+      "unsaved_changes": "Jums ir nesaglabātas izmaiņas.",
+      "cancel": "Atcelt",
+      "save_changes": "Saglabāt izmaiņas",
+      "solving": "Risināšana...",
+      "solve": "Atrisināt",
+      "creating_pdf": "Veido PDF...",
+      "download_pdf": "Lejupielādēt kā PDF"
     }
   
 }
