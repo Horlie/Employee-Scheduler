@@ -281,9 +281,8 @@ function generateMonthlyShifts(
            if (shouldSplitShift && splitHourString) {
               const splitHour = parseInt(splitHourString.split(':')[0], 10);
 
-              console.log(`Splitting Full Day shift on ${date.toLocaleDateString()} for role '${role}'. Available employees: ${availableEmployeesCount}`);
-              const midTime = new Date(startTime.getTime() + splitHour * 60 * 60 * 1000);
-
+              const midTime = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), splitHour, 0, 0);
+              console.log(`Shift split at (${splitHour}) ${midTime} (${formatInTimeZone(midTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss")}) `);
               const requiredGenders = [];
               if (shift.gender) {
                 const shiftGenders: string[] = typeof shift.gender === 'string' && shift.gender.includes(',')
@@ -296,19 +295,19 @@ function generateMonthlyShifts(
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,
-                start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-                end: formatInTimeZone(midTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+                start: formatInTimeZone(startTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
+                end: formatInTimeZone(midTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
                 location: "Hospital",
                 requiredSkill: role,
                 gender: requiredGenders,
                 isFullDay: false,
-                midTime: formatInTimeZone(midTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"), 
+                midTime: formatInTimeZone(midTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"), 
               });
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,
-                start: formatInTimeZone(midTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-                end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+                start: formatInTimeZone(midTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
+                end: formatInTimeZone(endTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
                 location: "Hospital",
                 requiredSkill: role,
                 gender: requiredGenders,
@@ -331,8 +330,8 @@ function generateMonthlyShifts(
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,
-                start: formatInTimeZone(startTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-                end: formatInTimeZone(endTime, "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+                start: formatInTimeZone(startTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
+                end: formatInTimeZone(endTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
                 location: "Hospital",
                 requiredSkill: role,
                 gender: requiredGenders,
@@ -370,12 +369,12 @@ function parseShiftTimes(
       startMinute,
       startSecond
     ),
-    "UTC"
+    "Europe/Riga"
   );
 
   let endTime = fromZonedTime(
     new Date(date.getFullYear(), date.getMonth(), date.getDate(), endHour, endMinute, endSecond),
-    "UTC"
+    "Europe/Riga"
   );
 
   // If end time is earlier than start time, assume it goes to the next day
