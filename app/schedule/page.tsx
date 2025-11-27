@@ -21,6 +21,7 @@ export default function Schedule() {
     activeMonth,
     setActiveMonth,
     availabilityData,
+    setAvailabilityData,
   } = useEmployee();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -44,7 +45,7 @@ export default function Schedule() {
     return employee.id;
   }, []); 
 
-  const parseAndSetScheduleData = useCallback((savedData: TimefoldShift[], currentEmployees: Employee[]) => {
+  const parseAndSetScheduleData = useCallback((savedData: TimefoldShift[], currentEmployees: Employee[], currentAvailability: EmployeeAvailability[] ) => {
 
     console.log("Parsing data received from DB:", savedData);
     if (!savedData || typeof savedData !== 'object'  || Object.keys(savedData).length === 0) {
@@ -99,7 +100,7 @@ export default function Schedule() {
       const shiftStart = new Date(availability.startDate);
       const shiftEnd = new Date(availability.finishDate);
 
-      const overlappingAvailability = availabilityData.find((avail) => {
+      const overlappingAvailability = currentAvailability.find((avail) => {
         const availStart = new Date(avail.startDate);
         const availEnd = new Date(avail.finishDate);
         return (
@@ -158,7 +159,7 @@ export default function Schedule() {
     });
     setEmployeeHours(employeeHoursObj);
     
-  }, [getEmployeeIdByName, setScheduleData, availabilityData, setCellScheduleColors]);
+  }, [getEmployeeIdByName, setScheduleData, setCellScheduleColors]);
 
   useEffect(() => {
     const user = localStorage.getItem("user");
@@ -190,7 +191,17 @@ export default function Schedule() {
           router.replace("/planning");
           throw new Error("No employees found. Cannot display schedule.");
         }
-
+        const employeeIds = currentEmployees.map((e) => e.id).join(",");
+        const availabilityResponse = await fetch(`/api/employee-availability?employeeIds=${employeeIds}`);
+        let fetchedAvailability: EmployeeAvailability[] = [];
+        
+        if (availabilityResponse.ok) {
+            const availData = await availabilityResponse.json();
+            fetchedAvailability = Array.isArray(availData.availability) ? availData.availability.flat() : [];
+            setAvailabilityData(fetchedAvailability);
+        } else {
+            console.error("Failed to fetch availability");
+        }
         
         const currentMonth = activeMonth.getMonth() + 1;
         const scheduleResponse = await fetch(`/api/schedules?userId=${parsedUser.id}&month=${currentMonth}`);
@@ -199,7 +210,7 @@ export default function Schedule() {
           setScheduleData([]);
         } else if (scheduleResponse.ok) {
           const data = await scheduleResponse.json();
-          parseAndSetScheduleData(data, currentEmployees);
+          parseAndSetScheduleData(data, currentEmployees, fetchedAvailability);
         } else {
           throw new Error('Failed to fetch schedule data');
         }
@@ -212,7 +223,7 @@ export default function Schedule() {
     };
 
     initializePage();
-  }, [activeMonth, needsRefresh, router, setEmployees, employees, parseAndSetScheduleData]); 
+  }, [activeMonth, needsRefresh, router, setEmployees, employees, parseAndSetScheduleData, setAvailabilityData]); 
   
 
   const handleSaveChanges = async () => {
