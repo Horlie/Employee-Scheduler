@@ -458,9 +458,9 @@ function generateMonthDays(date: Date) {
   const days = [];
 
   for (let d = 1; d <= lastDay; d++) {
-    days.push(new Date(year, month, d));
+    days.push(new Date(year, month, d, 10, 0, 0, 0 ));
   }
-
+  console.log("Generated days for month:", days);
   return days;
 }
 

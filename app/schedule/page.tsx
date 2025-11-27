@@ -7,7 +7,6 @@ import Navigation from "../components/Navigation";
 import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import { Employee, EmployeeAvailability, TimefoldShift } from "../types/scheduler";
-import { formatInTimeZone } from "date-fns-tz";
 import { useTranslation } from "react-i18next";
 
 export default function Schedule() {
@@ -68,17 +67,14 @@ export default function Schedule() {
 
         const employee = currentEmployees.find(e => e.id === shift.employeeId);
         const shiftId = shift.id; 
-        
-
         fullDayMap.set(shiftId, shift.isFullDay);
-
         return {
           id: shiftId,
           employeeId: shift.employeeId,
-          start: new Date(shift.start),
-          end: new Date(shift.end),
-          startDate: new Date(shift.start),
-          finishDate: new Date(shift.end),
+          start: new Date(shift.start.slice(0, -1)),
+          end: new Date(shift.end.slice(0, -1)),
+          startDate: new Date(shift.start.slice(0, -1)),
+          finishDate: new Date(shift.end.slice(0, -1)),
           status: "scheduled",
           employee,
           role: (shift as any).role, // Store the role for filtering
@@ -91,7 +87,6 @@ export default function Schedule() {
     setIsFullDay(fullDayMap);
     setScheduleData(parsedData);
     setOriginalScheduleData(parsedData);
-
     const newCellColors: Record<string, string> = {};
     setCellScheduleColors(newCellColors);
     setOriginalCellColors(newCellColors);
@@ -125,12 +120,10 @@ export default function Schedule() {
         }
       }
 
-      const cellKey = `${availability.employeeId}-${formatInTimeZone(
-        shiftStart,
-        "UTC",
-        "yyyy-MM-dd"
-      )}`;
+      const cellKey = `${availability.employeeId}-${
+        shiftStart.toISOString().split("T")[0]}`;
       newCellColors[cellKey] = cellColor;
+      
     });
 
     setCellScheduleColors(newCellColors);
@@ -139,7 +132,7 @@ export default function Schedule() {
     parsedData.forEach((availability: EmployeeAvailability) => {
       const start = new Date(availability.startDate);
       const finish = new Date(availability.finishDate);
-      const hours = (finish.getTime() - start.getTime()) / 3600000;
+      const hours = finish.getHours() - start.getHours();
       const currentMonth = start.getMonth() + 1;
 
       if (!totals.has(currentMonth)) {

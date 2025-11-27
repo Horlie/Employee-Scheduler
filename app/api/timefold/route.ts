@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { Gender } from "@/app/types/scheduler";
 
 import { Employee, EmployeeAvailability, Shift, RoleSettings, User } from "@/app/types/scheduler";
@@ -161,32 +160,32 @@ function buildTimefoldJson(
         ? employee.availability
             .filter((a: EmployeeAvailability) => a.status === "vacation")
             .map((a: EmployeeAvailability) => ({
-              start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-              end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              start: a.startDate,
+              end: a.finishDate,
             }))
         : [],
       unavailableIntervals: employee.availability
         ? employee.availability
             .filter((a: EmployeeAvailability) => a.status === "unreachable")
             .map((a: EmployeeAvailability) => ({
-              start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-              end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              start: a.startDate,
+              end: a.finishDate,
             }))
         : [],
       undesiredIntervals: employee.availability
         ? employee.availability
             .filter((a: EmployeeAvailability) => a.status === "unavailable")
             .map((a: EmployeeAvailability) => ({
-              start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-              end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              start: a.startDate,
+              end: a.finishDate,
             }))
         : [],
       desiredIntervals: employee.availability
         ? employee.availability
             .filter((a: EmployeeAvailability) => a.status === "preferable")
             .map((a: EmployeeAvailability) => ({
-              start: formatInTimeZone(new Date(a.startDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-              end: formatInTimeZone(new Date(a.finishDate), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+              start: a.startDate,
+              end: a.finishDate,
             }))
         : [],
       monthlyHours: user.monthlyHours ? Math.floor(user.monthlyHours * (map.get(employee)  ?? employee.rate)) : 160,
@@ -282,7 +281,6 @@ function generateMonthlyShifts(
               const splitHour = parseInt(splitHourString.split(':')[0], 10);
 
               const midTime = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), splitHour, 0, 0);
-              console.log(`Shift split at (${splitHour}) ${midTime} (${formatInTimeZone(midTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss")}) `);
               const requiredGenders = [];
               if (shift.gender) {
                 const shiftGenders: string[] = typeof shift.gender === 'string' && shift.gender.includes(',')
@@ -295,19 +293,19 @@ function generateMonthlyShifts(
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,
-                start: formatInTimeZone(startTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
-                end: formatInTimeZone(midTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
+                start: startTime.toISOString(), 
+                end: midTime.toISOString(),
                 location: "Hospital",
                 requiredSkill: role,
                 gender: requiredGenders,
                 isFullDay: false,
-                midTime: formatInTimeZone(midTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"), 
+                midTime: midTime.toISOString(), 
               });
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,
-                start: formatInTimeZone(midTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
-                end: formatInTimeZone(endTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
+                start: midTime.toISOString(),
+                end: endTime.toISOString(), 
                 location: "Hospital",
                 requiredSkill: role,
                 gender: requiredGenders,
@@ -330,8 +328,8 @@ function generateMonthlyShifts(
 
               timefoldShifts.push({
                 id: `${role}_${shiftCounter++}`,
-                start: formatInTimeZone(startTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
-                end: formatInTimeZone(endTime, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss"),
+                start: startTime.toISOString(),
+                end: endTime.toISOString(),
                 location: "Hospital",
                 requiredSkill: role,
                 gender: requiredGenders,
@@ -360,22 +358,17 @@ function parseShiftTimes(
   const [startHour, startMinute, startSecond] = startTimeStr.split(":").map(Number);
   const [endHour, endMinute, endSecond] = endTimeStr.split(":").map(Number);
 
-  const startTime = fromZonedTime(
-    new Date(
+  const startTime = new Date(
       date.getFullYear(),
       date.getMonth(),
       date.getDate(),
       startHour,
       startMinute,
       startSecond
-    ),
-    "Europe/Riga"
-  );
+    );
 
-  let endTime = fromZonedTime(
-    new Date(date.getFullYear(), date.getMonth(), date.getDate(), endHour, endMinute, endSecond),
-    "Europe/Riga"
-  );
+  let endTime = 
+    new Date(date.getFullYear(), date.getMonth(), date.getDate(), endHour, endMinute, endSecond);
 
   // If end time is earlier than start time, assume it goes to the next day
   if (endTime <= startTime) {

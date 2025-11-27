@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import { formatInTimeZone } from "date-fns-tz";
 
 export async function POST(request: Request) {
   try {
@@ -98,9 +97,9 @@ export async function GET(request: Request) {
 }
 function convertLocalDateToUTCIgnoringTimezone(date: Date) {
   // Assume the input date is in local time, convert it to UTC
-  return formatInTimeZone(date, "Europe/Riga", "yyyy-MM-dd'T'HH:mm:ss.SSS") + "Z";
+  return date.toISOString();
 }
 
 function convertUTCToLocalDateIgnoringTimezone(utcDate: Date) {
-  return formatInTimeZone(utcDate, "UTC", "yyyy-MM-dd'T'HH:mm:ss");
+  return utcDate.toISOString();
 }

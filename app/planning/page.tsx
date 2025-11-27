@@ -7,7 +7,6 @@ import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { fromZonedTime } from "date-fns-tz";
 
 export default function Planning() {
   const {
@@ -61,7 +60,9 @@ export default function Planning() {
         const newCellColors: Record<string, string> = {};
         allAvailability.flat().forEach((availability: EmployeeAvailability) => {
           const cellKey = `${availability.employeeId}-${
-            fromZonedTime(availability.startDate, "UTC").toISOString().split("T")[0]
+            typeof availability.startDate === "string"
+              ? availability.startDate.split("T")[0]
+              : availability.startDate.toISOString().split("T")[0]
           }`;
           switch (availability.status) {
             case "unavailable":

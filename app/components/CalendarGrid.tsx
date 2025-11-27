@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, type JSX } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
-import { getWeek, format } from "date-fns";
-import { fromZonedTime } from "date-fns-tz";
+import { getWeek } from "date-fns";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
 
 import { DndContext, DragEndEvent, useDroppable } from '@dnd-kit/core';
@@ -180,7 +179,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     console.log(shiftToSave);
     handleCloseTooltip();
     const cellKey = `${shiftToSave.employeeId}-${
-      fromZonedTime(shiftToSave.startDate, "UTC").toISOString().split("T")[0]
+      typeof shiftToSave.startDate === "string"
+      ? shiftToSave.startDate.split("T")[0]
+      : shiftToSave.startDate.toISOString().split("T")[0]
     }`;
     setCellColors(prev => ({
       ...prev,
@@ -202,7 +203,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   ) => {
     const promises = multiSelectedCells.map(async (cell) => {
       const { employeeId, date } = cell;
-      const cellKey = `${employeeId}-${fromZonedTime(date, "UTC").toISOString().split("T")[0]}`;
+      const cellKey = `${employeeId}-${date.toISOString().split("T")[0]}`;
 
       if (action === "delete") {
         const availability = availabilityData.find(
@@ -210,7 +211,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         );
         if (availability) {
            try {
-             await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${fromZonedTime(new Date(availability.startDate), "UTC").toISOString()}`, { method: "DELETE" });
+             await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${availability.startDate}`, { method: "DELETE" });
              setCellColors((prev) => { const n = { ...prev }; delete n[cellKey]; return n; });
              setAvailabilityData((prev) => prev.filter(a => a.id !== availability.id));
            } catch (e) { console.error(e); }
@@ -271,7 +272,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   ) => {
     if (selectedEmployee && selectedDate) {
       const cellKey = `${selectedEmployee.id}-${
-        fromZonedTime(startDate, "UTC").toISOString().split("T")[0]
+        startDate.toISOString().split("T")[0]
       }`;
       if (action === "delete") {
         try {
@@ -285,7 +286,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             const response = await fetch(
               `/api/employee-availability?employeeId=${
                 selectedEmployee.id
-              }&startDate=${fromZonedTime(startDate, "UTC").toISOString()}`,
+              }&startDate=${startDate.toISOString()}`,
               {
                 method: "DELETE",
               }
@@ -325,7 +326,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             const deleteResponse = await fetch(
               `/api/employee-availability?employeeId=${
                 selectedEmployee.id
-              }&startDate=${fromZonedTime(existingAvailability.startDate, "UTC").toISOString()}`,
+              }&startDate=${      
+                typeof existingAvailability.startDate === "string"
+                ? existingAvailability.startDate.split("T")[0]
+                : existingAvailability.startDate.toISOString().split("T")[0]}`,
               {
                 method: "DELETE",
               }
@@ -484,9 +488,11 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     );
     setCellColors(prev => {
     
-    const oldCellKey = `${draggedShift.employeeId}-${fromZonedTime(draggedShift.startDate, "UTC").toISOString().split("T")[0]}`;
-    const newCellKey = `${targetEmployeeId}-${fromZonedTime(newStartDate, "UTC").toISOString().split("T")[0]}`;
-
+    const oldCellKey = `${draggedShift.employeeId}-${      
+      typeof draggedShift.startDate === "string"
+      ? draggedShift.startDate.split("T")[0]
+      : draggedShift.startDate.toISOString().split("T")[0]}`;
+    const newCellKey = `${targetEmployeeId}-${newStartDate.toISOString().split("T")[0]}`;
     
     let newColor = prev[oldCellKey] || "bg-purple-100";
     if (draggedShift.status === "preferable") newColor = "bg-green-200";
@@ -602,7 +608,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   );
 
   const renderAvailabilityTile = (employee: Employee, day: Date, role: string) => {
-    const cellKey = `${employee.id}-${fromZonedTime(day, "UTC").toISOString().split("T")[0]}`;
+    const cellKey = `${employee.id}-${day.toISOString().split("T")[0]}`;
     const isMultiSelected = multiSelectedCells.some(
         (cell) => cell.employeeId === employee.id.toString() && cell.date.toDateString() === day.toDateString()
     );
@@ -631,7 +637,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         new Date(a.startDate).toDateString() === day.toDateString() &&
         (a.role === undefined || a.role === null || a.role === role) // Only show shift if it matches the current role group (or has no role for backward compatibility)
     );
-    const formatTime = (date: Date) => format(new Date(date), "HH:mm");
+    const formatTime = (date: Date | string) => {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      return dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
+    }
 
     const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
 
@@ -641,9 +650,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
         ) : (
           <span className="text-gray-700 text-center">
-            {`${formatTime(new Date(shift.startDate))} ${formatTime(
-              new Date(shift.finishDate)
-            )}`}
+            {`${formatTime(shift.startDate)} ${formatTime(shift.finishDate)}`}
           </span>
         )}
       </div>
@@ -673,9 +680,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                     <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
                   ) : (
                     <span className="text-gray-700 text-center">
-                      {`${formatTime(new Date(availability.startDate))} ${formatTime(
-                        new Date(availability.finishDate)
-                      )}`}
+                      {`${formatTime(availability.startDate)} ${formatTime(availability.finishDate)}`}
                     </span>
                   )}
                 </div>
@@ -693,9 +698,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                     <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
                   ) : (
                     <span className="text-gray-700 text-center">
-                      {`${formatTime(new Date(schedule.startDate))} ${formatTime(
-                        new Date(schedule.finishDate)
-                      )}`}
+                      {`${formatTime(schedule.startDate)} ${formatTime(schedule.finishDate)}`}
                     </span>
                   )}
                 </div>
