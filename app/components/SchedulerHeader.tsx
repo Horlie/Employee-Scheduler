@@ -41,13 +41,19 @@ const SchedulerHeader: React.FC<SchedulerHeaderProps> = ({
 
 }) => {
   const { t, i18n } = useTranslation();
+  const [dateLabel, setDateLabel] = useState<string>("");
+  useEffect(() => {
+    setDateLabel(
+      currentDate.toLocaleString(i18n.language, {
+        month: "long",
+        year: "numeric",
+      })
+    );
+  }, [currentDate, i18n.language]);
   return (
     <div className="relative flex bg-gray-100 justify-between items-center px-10 py-5 border-b border-gray-300">
       <div className="text-left ml-3 text-2xl text-gray-700 font-bold uppercase tracking-widest">
-        {currentDate.toLocaleString(i18n.language, {
-          month: "long",
-          year: "numeric",
-        })}
+        {dateLabel || "\u00A0"}
       </div>
       <div className="flex items-center">
         
