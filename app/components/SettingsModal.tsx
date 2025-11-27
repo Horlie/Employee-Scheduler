@@ -403,8 +403,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       .filter((shift) => shift.roles.includes(role))
       .map((shift) =>
         shift.isFullDay
-          ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)})`
-          : `${shift.startTime.slice(0, -3)}-${shift.endTime.slice(0, -3)}`
+          ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)}) (${
+              typeof shift.gender === "string"
+                ? shift.gender.split(",").map(g => t('settings_tab.' + g.toLowerCase())).join(", ")
+                : Array.isArray(shift.gender)
+                  ? shift.gender.map(g => t('settings_tab.' + g.toLowerCase())).join(", ")
+                  : ""
+            })`
+          : `${shift.startTime.slice(0, -3)}-${shift.endTime.slice(0, -3)} (${
+              typeof shift.gender === "string"
+                ? shift.gender.split(",").map(g => t('settings_tab.' + g.toLowerCase())).join(", ")
+                : Array.isArray(shift.gender)
+                  ? shift.gender.map(g => t('settings_tab.' + g.toLowerCase())).join(", ")
+                  : ""
+            })`
       );
     return Array.from(new Set(shifts));
   };
@@ -558,8 +570,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       </label>
                       <input
                         id="shiftStart"
-                        type="text"
-                        placeholder="--:--"
+                        type="time"
                         required
                         className={`p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500`}
                         value={startTime}
@@ -584,8 +595,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       </label>
                       <input
                         id="shiftEnd"
-                        type="text"
-                        placeholder="--:--"
+                        type="time"
                         required
                         disabled={isFullDay}
                         className={`p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500 ${
