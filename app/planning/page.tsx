@@ -29,11 +29,41 @@ export default function Planning() {
     const user = localStorage.getItem("user");
     if (user) {
       setIsLoggedIn(true);
-      if (employees.length === 0) {
+      if (employees.length === 0 || availabilityData.length === 0) {
         fetchEmployees();
       }
     }
-  }, [employees.length]);
+  }, [employees.length, availabilityData.length]);
+  useEffect(() => {
+    if (availabilityData.length > 0) {
+      const newCellColors: Record<string, string> = {};
+      
+      availabilityData.forEach((availability: EmployeeAvailability) => {
+        const dateStr = typeof availability.startDate === "string"
+              ? availability.startDate.split("T")[0]
+              : availability.startDate.toISOString().split("T")[0];
+
+        const cellKey = `${availability.employeeId}-${dateStr}`;
+        
+        switch (availability.status) {
+          case "unavailable":
+            newCellColors[cellKey] = "bg-yellow-200";
+            break;
+          case "unreachable":
+            newCellColors[cellKey] = "bg-red-200";
+            break;
+          case "preferable":
+            newCellColors[cellKey] = "bg-green-200";
+            break;
+          case "vacation":
+            newCellColors[cellKey] = "bg-blue-200"; 
+            break;
+        }
+      });
+      
+      setCellColors(newCellColors);
+    }
+  }, [availabilityData, setCellColors]);
 
   const fetchEmployees = async () => {
     setIsLoading(true);
@@ -56,33 +86,6 @@ export default function Planning() {
         }
         setAvailabilityData(allAvailability.flat());
 
-        // Update cell colors based on fetched availability
-        const newCellColors: Record<string, string> = {};
-        allAvailability.flat().forEach((availability: EmployeeAvailability) => {
-          const cellKey = `${availability.employeeId}-${
-            typeof availability.startDate === "string"
-              ? availability.startDate.split("T")[0]
-              : availability.startDate.toISOString().split("T")[0]
-          }`;
-          switch (availability.status) {
-            case "unavailable":
-              newCellColors[cellKey] = "bg-yellow-200";
-              break;
-            case "unreachable":
-              newCellColors[cellKey] = "bg-red-200";
-              break;
-            case "preferable":
-              newCellColors[cellKey] = "bg-green-200";
-              break;
-            case "vacation":
-              newCellColors[cellKey] = "bg-blue-200"; 
-              break;
-          }
-        });
-
-        setCellColors(newCellColors);
-      } else {
-        console.error("Failed to fetch employees");
       }
     } catch (error) {
       console.error("Error fetching employees:", error);
