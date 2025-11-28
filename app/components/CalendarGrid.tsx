@@ -648,7 +648,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
     const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
 
-    const renderShiftContent = (shift: EmployeeAvailability, isFullDayMap: Map<string | number, boolean>) => {
+    const renderShiftContent = (shift: EmployeeAvailability, isFullDayMap: Map<string | number, boolean>, onContentClick: (e: React.MouseEvent<HTMLDivElement>) => void) => {
       let isFull = shift.isFullDay === true || isFullDayMap?.get(Number(shift.id)) === true;
 
       if (!isFull && shift.startDate && shift.finishDate) {
@@ -663,14 +663,20 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         }
       }
       return (
-        <div className="w-full h-full flex items-center justify-center text-xs px-1">
-          {isFull ? (
-            <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
-          ) : (
-            <span className="text-gray-700 text-center">
-              {`${formatTime(new Date(shift.startDate))} - ${formatTime(new Date(shift.finishDate))}`}
-            </span>
-          )}
+        <div
+          onPointerUp={(e) => {
+             if (e.button === 0) {
+                onContentClick(e);
+             }
+          }}
+          className="w-full h-full flex items-center justify-center text-xs px-1 cursor-pointer relative z-10">
+            {isFull ? (
+              <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
+            ) : (
+              <span className="text-gray-700 text-center">
+                {`${formatTime(new Date(shift.startDate))} - ${formatTime(new Date(shift.finishDate))}`}
+              </span>
+            )}
         </div>
       );
     };
@@ -694,24 +700,32 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           {availability && (
             enableDragAndDrop ? (
               <DraggableShift shift={availability}>
-                <div className="w-full h-full flex items-center justify-center text-xs px-1">
-                  {renderShiftContent(availability, isPlanningFullDay)}
-                </div>
+                  {renderShiftContent(availability, isPlanningFullDay, (e) => {
+                    e.stopPropagation(); 
+                    handleCellClick(employee, day, e);
+                  })}
               </DraggableShift>
             ) : (
-              renderShiftContent(availability, isPlanningFullDay)
+              renderShiftContent(availability, isPlanningFullDay, (e) => {
+                e.stopPropagation(); 
+                handleCellClick(employee, day, e);
+              })
             )
           )}
           {schedule && (
             enableDragAndDrop ? (
                 <DraggableShift shift={schedule}>
 
-                <div className="w-full h-full flex items-center justify-center text-xs px-1">
-                  {renderShiftContent(schedule, isScheduleFullDay)}
-                </div>
+                  {renderShiftContent(schedule, isScheduleFullDay, (e) => {
+                    e.stopPropagation(); 
+                    handleCellClick(employee, day, e);
+                  })}
               </DraggableShift>
             ) : (
-              renderShiftContent(schedule, isScheduleFullDay)
+              renderShiftContent(schedule, isScheduleFullDay, (e) => {
+                e.stopPropagation(); 
+                handleCellClick(employee, day, e);
+              })
             )
           )}
         </div>
