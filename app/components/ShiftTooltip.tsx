@@ -100,7 +100,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
 
   return (
     <div
-      style={{ top: position.top, left: position.left }}
+      style={{ top: position.top, left: position.left, marginTop: '55px' }}
       className="absolute z-10 p-4 bg-white rounded-lg shadow-2xl w-64 transform -translate-x-1/2 mt-2 transition-all duration-300 ease-in-out animate-fade-in-down border"
     >
       <div className="absolute left-1/2 -top-2 transform -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-l border-t"></div>
