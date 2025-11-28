@@ -644,17 +644,31 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
     const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
 
-    const renderShiftContent = (shift: EmployeeAvailability, isFullDayMap: Map<string | number, boolean>) => (
-      <div className="w-full h-full flex items-center justify-center text-xs px-1">
-        {isFullDayMap?.get(shift.id) ? (
-          <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
-        ) : (
-          <span className="text-gray-700 text-center">
-            {`${formatTime(shift.startDate)} ${formatTime(shift.finishDate)}`}
-          </span>
-        )}
-      </div>
-    );
+    const renderShiftContent = (shift: EmployeeAvailability, isFullDayMap: Map<string | number, boolean>) => {
+      let isFull = shift.isFullDay === true || isFullDayMap?.get(Number(shift.id)) === true;
+      if (!isFull && shift.startDate && shift.finishDate) {
+        const start = new Date(shift.startDate);
+        const end = new Date(shift.finishDate);
+        
+        const durationMs = end.getTime() - start.getTime();
+        const hours = durationMs / (1000 * 60 * 60);
+
+        if (hours >= 23.9) {
+          isFull = true;
+        }
+      }
+      return (
+        <div className="w-full h-full flex items-center justify-center text-xs px-1">
+          {isFull ? (
+            <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
+          ) : (
+            <span className="text-gray-700 text-center">
+              {`${formatTime(new Date(shift.startDate))} - ${formatTime(new Date(shift.finishDate))}`}
+            </span>
+          )}
+        </div>
+      );
+    };
     return (
       <DroppableCell employee={employee} day={day} role={role}>
         <div
@@ -676,13 +690,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             enableDragAndDrop ? (
               <DraggableShift shift={availability}>
                 <div className="w-full h-full flex items-center justify-center text-xs px-1">
-                  {isPlanningFullDay?.get(availability.id) ? (
-                    <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
-                  ) : (
-                    <span className="text-gray-700 text-center">
-                      {`${formatTime(availability.startDate)} ${formatTime(availability.finishDate)}`}
-                    </span>
-                  )}
+                  {renderShiftContent(availability, isPlanningFullDay)}
                 </div>
               </DraggableShift>
             ) : (
@@ -694,13 +702,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                 <DraggableShift shift={schedule}>
 
                 <div className="w-full h-full flex items-center justify-center text-xs px-1">
-                  {isScheduleFullDay?.get(schedule.id) ? (
-                    <span className="text-gray-600 font-medium">{t('calendar.all_day')}</span>
-                  ) : (
-                    <span className="text-gray-700 text-center">
-                      {`${formatTime(schedule.startDate)} ${formatTime(schedule.finishDate)}`}
-                    </span>
-                  )}
+                  {renderShiftContent(schedule, isScheduleFullDay)}
                 </div>
               </DraggableShift>
             ) : (
