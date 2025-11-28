@@ -7,6 +7,7 @@ import { DndContext, DragEndEvent, useDroppable } from '@dnd-kit/core';
 import { DraggableShift } from './DraggableShift';
 import { ShiftTooltip } from "./ShiftTooltip";
 import { useTranslation } from "react-i18next";
+import { usePathname } from "next/navigation";
 
 interface CalendarGridProps {
   groupedEmployees: [string, Employee[]][];
@@ -73,6 +74,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const [selectedCell, setSelectedCell] = useState<EmployeeAvailability | null>(null);
   const [multiSelectedCells, setMultiSelectedCells] = useState<{ employeeId: string; date: Date; employee: Employee }[]>([]);
   const { t } = useTranslation();
+  const pathname = usePathname();
+  const isSchedulePage = pathname === "/schedule";
+  
   
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -94,6 +98,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       if (selectedEmployee || multiSelectedCells.length > 0) {
@@ -121,9 +126,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   ) => {
     const cellElement = event.currentTarget;
     const rect = cellElement.getBoundingClientRect();
-   
 
-    if (event.ctrlKey || event.metaKey) {
+    if (!isSchedulePage && (event.ctrlKey || event.metaKey)) {
       setSelectedEmployee(null);
       setSelectedDate(null);
       setSelectedCell(null);
@@ -646,6 +650,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
     const renderShiftContent = (shift: EmployeeAvailability, isFullDayMap: Map<string | number, boolean>) => {
       let isFull = shift.isFullDay === true || isFullDayMap?.get(Number(shift.id)) === true;
+
       if (!isFull && shift.startDate && shift.finishDate) {
         const start = new Date(shift.startDate);
         const end = new Date(shift.finishDate);
@@ -757,7 +762,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         )}
         {renderEmployeeRows()}
 
-        {( (selectedEmployee && selectedDate) || multiSelectedCells.length > 0 ) && showTooltips && (
+        {( (selectedEmployee && selectedDate) || multiSelectedCells.length > 0 ) && showTooltips && !isSchedulePage && (
           <div ref={tooltipRef}>
             <EmployeeEventTooltip
               position={tooltipPosition}
@@ -773,8 +778,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           </div>
         )}
 
-        {selectedEmployee && selectedDate && window.location.pathname == "/schedule" && multiSelectedCells.length === 0 && (
-          <div className="absolute" style={{zIndex: 100}} ref={tooltipRef}>
+        {selectedEmployee && selectedDate && isSchedulePage && multiSelectedCells.length === 0 && (
+          <div ref={tooltipRef}>
             <ShiftTooltip             
               shift={selectedCell ?? null}
               date={selectedDate}
