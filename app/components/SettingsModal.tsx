@@ -1086,7 +1086,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     }}
                     className="mt-2 p-2 border border-gray-300 rounded"
                   />
-                  <select defaultValue={'DEFAULT'}
+                  <select 
+                    value={employeeGender || ""}
                     onChange={(e) => {
                       setEmployeeGender(e.target.value as Gender);
                     }}
