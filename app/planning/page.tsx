@@ -7,6 +7,7 @@ import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { format } from "date-fns";
 
 export default function Planning() {
   const {
@@ -34,14 +35,14 @@ export default function Planning() {
       }
     }
   }, [employees.length, availabilityData.length]);
+
   useEffect(() => {
     if (availabilityData.length > 0) {
       const newCellColors: Record<string, string> = {};
       
       availabilityData.forEach((availability: EmployeeAvailability) => {
-        const dateStr = typeof availability.startDate === "string"
-              ? availability.startDate.split("T")[0]
-              : availability.startDate.toISOString().split("T")[0];
+        const dateObj = new Date(availability.startDate);
+        const dateStr = format(dateObj, "yyyy-MM-dd");
 
         const cellKey = `${availability.employeeId}-${dateStr}`;
         
