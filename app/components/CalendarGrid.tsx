@@ -461,7 +461,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         return;
     }
 
-    if (oldStartDate.toDateString() === targetDate.toDateString()) {
+    if (oldStartDate.toDateString() === targetDate.toDateString() && draggedShift.employeeId === targetEmployeeId) {
       return;
     }
 

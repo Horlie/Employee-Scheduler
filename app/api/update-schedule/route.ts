@@ -5,9 +5,9 @@ export async function POST(request: NextRequest) {
   try {
     await prisma.$connect();
 
-    const { schedule, userId, month } = await request.json(); // весь массив смен
+    const { schedule, userId, month } = await request.json(); 
 
-    if (!Array.isArray(schedule) || !userId || !month) { // Проверка входных данных, типо если расписания нет
+    if (!Array.isArray(schedule) || !userId || !month) { 
       return NextResponse.json({ error: "Invalid data provided." }, { status: 400 });
     }
     
@@ -16,19 +16,20 @@ export async function POST(request: NextRequest) {
       prisma.timefoldShift.upsert({
         where: { id: shift.id },
         update: {
-          start: new Date(shift.start),
-          end: new Date(shift.end),
+          start: new Date(shift.start || shift.startDate),
+            end: new Date(shift.end || shift.finishDate),
           isFullDay: shift.isFullDay,
-          role: shift.role || null, // Preserve role when updating
+          role: shift.role || null, 
+          employeeId: shift.employeeId,
         },
         create: {
-          start: new Date(shift.start),
-          end: new Date(shift.end),
+          start: new Date(shift.start || shift.startDate),
+            end: new Date(shift.end || shift.finishDate),
           isFullDay: shift.isFullDay,
           month: month,
           userId: userId,
           employeeId: shift.employeeId,
-          role: shift.role || null // Include role when creating
+          role: shift.role || null 
         },
       })
     )
