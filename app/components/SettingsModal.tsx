@@ -45,6 +45,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { t } = useTranslation();
+  const isStartFilled = startTime.length > 0;
 
   const initializeRoleSettings = (): RoleSettings => {
     const initialSettings: RoleSettings = {};
@@ -425,6 +426,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     const dayKey = `settings_tab.${day.toLowerCase()}`;
     return t(dayKey);
   };
+  // console.log("Form State:", { 
+  //   employeeName, 
+  //   employeeRole, 
+  //   employeeGender, 
+  //   userId 
+  // });
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
@@ -596,8 +603,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                       <input
                         id="shiftEnd"
                         type="time"
-                        required
-                        disabled={isFullDay}
+                        required                        
+                        disabled={!isStartFilled || isFullDay}
                         className={`p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500 ${
                           isFullDay ? "bg-gray-200 cursor-not-allowed" : ""
                         }`}
@@ -625,10 +632,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     </div>
 
                     {/* Customized Checkbox */}
-                    <label className="flex items-center cursor-pointer">
+                    <label className={`flex items-center ${!isStartFilled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
                       <input
                         type="checkbox"
                         className="hidden"
+                        disabled={!isStartFilled}
                         checked={isFullDay}
                         onChange={() => {
                           setIsFullDay(!isFullDay);
@@ -692,7 +700,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   
                   )}
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className={`flex flex-wrap gap-2 ${!isStartFilled ? "opacity-50 pointer-events-none" : ""}`}>
                     {[
                       "Monday",
                       "Tuesday",
@@ -745,7 +753,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   </div>
 
                   {/* Added roles selection tiles */}
-                  <div className="flex flex-wrap gap-2 mt-4 justify-center border-t border-gray-300 pt-4">
+                  <div className={`flex flex-wrap gap-2 mt-4 justify-center border-t border-gray-300 pt-4 ${!isStartFilled ? "opacity-50 pointer-events-none" : ""}`}>
                     {roles.map((role) => (
                       <button
                         key={role}
@@ -769,7 +777,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                   </div>
 
                   {/* Gender selection for shift - similar to role selection */}
-                  <div className="flex flex-col mt-4 border-t border-gray-300 pt-4">
+                  <div className={`flex flex-col mt-4 border-t border-gray-300 pt-4 ${!isStartFilled ? "opacity-50 pointer-events-none" : ""}`}>
                     <div className="flex flex-wrap gap-2 justify-center">
                       {[Gender.MALE, Gender.FEMALE].map((gender) => {
                         const isSelected = selectedGenders.includes(gender);
@@ -811,6 +819,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
                     <hr className="w-full border-t border-gray-300" />
                     <button
                       type="submit"
+                      disabled={!isStartFilled}
                       className="absolute top-0 transform -translate-y-1/2 w-10 h-10 bg-indigo-200 rounded-full border border-indigo-600 flex items-center justify-center focus:outline-none hover:bg-indigo-500 group"
                     >
                       <svg
