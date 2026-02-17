@@ -242,10 +242,14 @@ export default function Schedule() {
 
         return startChanged || endChanged || fullDayChanged || employeeChanged;
       });
+      const deletedShiftIds = originalScheduleData
+        .filter(orig => !scheduleData.find(curr => curr.id === orig.id))
+        .map(s => s.id);
 
       console.log("Changes to save:", changedSchedule);
+      console.log("Deleted IDs:", deletedShiftIds);
 
-      if (changedSchedule.length === 0) {
+      if (changedSchedule.length === 0 && deletedShiftIds.length === 0){
         alert("No changes detected");
         setIsLoading(false);
         return;
@@ -256,6 +260,7 @@ export default function Schedule() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           schedule: changedSchedule,
+          deletedShiftIds: deletedShiftIds,
           userId: JSON.parse(localStorage.getItem("user") || "{}").id,
           month: activeMonth.getMonth() + 1,
         }),
