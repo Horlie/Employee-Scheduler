@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import { Employee, EmployeeAvailability, TimefoldShift } from "../types/scheduler";
 import { useTranslation } from "react-i18next";
+import { format } from "date-fns";
+
 
 export default function Schedule() {
   const {
@@ -43,6 +45,29 @@ export default function Schedule() {
     }
     return employee.id;
   }, []); 
+  useEffect(() => {
+      const totals: Record<number, Map<number, number>> = {};
+
+      scheduleData.forEach((shift) => {
+        const start = new Date(shift.start || shift.startDate);
+        const end = new Date(shift.end || shift.finishDate);
+        
+        let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        
+        hours = Math.round(hours * 100) / 100;
+
+        const shiftMonth = start.getMonth() + 1;
+
+        if (!totals[shiftMonth]) {
+          totals[shiftMonth] = new Map();
+        }
+
+        const currentTotal = totals[shiftMonth].get(shift.employeeId) || 0;
+        totals[shiftMonth].set(shift.employeeId, currentTotal + hours);
+      });
+
+      setEmployeeHours(totals);
+  }, [scheduleData]);
 
   const parseAndSetScheduleData = useCallback((savedData: TimefoldShift[], currentEmployees: Employee[], currentAvailability: EmployeeAvailability[] ) => {
 
@@ -120,37 +145,15 @@ export default function Schedule() {
         }
       }
 
-      const cellKey = `${availability.employeeId}-${
-        shiftStart.toISOString().split("T")[0]}`;
+      const cellKey = `${availability.employeeId}-${format(
+        shiftStart,
+        "yyyy-MM-dd"
+      )}`;
       newCellColors[cellKey] = cellColor;
       
     });
 
-    setCellScheduleColors(newCellColors);
-
-    const totals: Map<number, Map<number, number>> = new Map();
-    parsedData.forEach((availability: EmployeeAvailability) => {
-      const start = new Date(availability.startDate);
-      const finish = new Date(availability.finishDate);
-      const hours = finish.getHours() - start.getHours();
-      const currentMonth = start.getMonth() + 1;
-
-      if (!totals.has(currentMonth)) {
-        totals.set(currentMonth, new Map());
-      }
-
-      const monthTotals = totals.get(currentMonth)!;
-      monthTotals.set(
-        availability.employeeId,
-        (monthTotals.get(availability.employeeId) || 0) + hours
-      );
-    });
-
-    const employeeHoursObj: Record<number, Map<number, number>> = {};
-    totals.forEach((value, key) => {
-      employeeHoursObj[key] = value;
-    });
-    setEmployeeHours(employeeHoursObj);
+    setCellScheduleColors(newCellColors);    
     
   }, [getEmployeeIdByName, setScheduleData, setCellScheduleColors]);
 
