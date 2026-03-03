@@ -196,9 +196,24 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   const handleDeleteShift = (shiftId: number | string) => {
+    const shiftToDelete = scheduleData.find(s => s.id === shiftId);
     setScheduleData(prevScheduleData => prevScheduleData.filter(s => s.id !== shiftId));
+    if (shiftToDelete) {
+      const dateStr = typeof shiftToDelete.startDate === "string" 
+        ? shiftToDelete.startDate.split("T")[0] 
+        : shiftToDelete.startDate.toISOString().split("T")[0];
+        
+      const cellKey = `${shiftToDelete.employeeId}-${dateStr}`;
+
+      setCellColors(prev => {
+        const newColors = { ...prev };
+        delete newColors[cellKey]; 
+        return newColors;
+      });
+    }
     handleCloseTooltip();
-  };
+    onScheduleChange();
+  };  
   const handleMultiAction = async (
     action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
     startTimeStr: string,
