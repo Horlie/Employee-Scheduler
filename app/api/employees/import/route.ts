@@ -57,10 +57,33 @@ export async function POST(request: NextRequest) {
       });
     }
     console.log(employeesToCreate);
+
     // Insert employees into the database
-    await prisma.employee.createMany({
-      data: employeesToCreate,
-    });
+    for (const emp of employeesToCreate) {
+      
+      const existingEmployee = await prisma.employee.findFirst({
+        where: {
+          name: emp.name,
+          userId: emp.userId,
+        },
+      });
+
+      if (existingEmployee) {
+
+        await prisma.employee.update({
+          where: { id: existingEmployee.id },
+          data: {
+            roles: emp.roles,
+            gender: emp.gender,
+          },
+        });
+      } else {
+
+        await prisma.employee.create({
+          data: emp,
+        });
+      }
+    }
 
     return NextResponse.json({ success: true, employeesToCreate }, { status: 200 });
   } catch (error) {
