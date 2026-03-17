@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, type JSX } from "react";
+import React, { useState, useEffect, useRef, type JSX, useMemo } from "react";
 import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { getWeek } from "date-fns";
 import EmployeeEventTooltip from "./EmployeeEventTooltip";
@@ -77,7 +77,102 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const pathname = usePathname();
   const isSchedulePage = pathname === "/schedule";
   
-  
+  const flatEmployees = useMemo(() => {
+    return groupedEmployees.flatMap(([_, emps]) => emps);
+  }, [groupedEmployees]);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ empIdx: number; dayIdx: number } | null>(null);
+  const getEmployeeIndex = (id: number) => flatEmployees.findIndex(e => e.id === id);
+
+  const handleMouseDown = (
+    employee: Employee, 
+    date: Date, 
+    dayIndex: number, 
+    e: React.MouseEvent
+  ) => {
+    if (isSchedulePage || e.button !== 0) return;
+
+    e.preventDefault(); 
+    setIsDragging(true);
+
+    const empIdx = getEmployeeIndex(employee.id);
+    setDragStart({ empIdx, dayIdx: dayIndex });
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      top: rect.top,
+      left: rect.left + rect.width / 2,
+    });
+
+    let initialSelection = [...multiSelectedCells];
+    if (!e.ctrlKey && !e.metaKey) {
+      initialSelection = [];
+    }
+
+    
+    const cellId = `${employee.id}-${date.toDateString()}`;
+    if (!initialSelection.some(c => `${c.employeeId}-${c.date.toDateString()}` === cellId)) {
+        initialSelection.push({ employeeId: employee.id.toString(), date, employee });
+    }
+    
+    setMultiSelectedCells(initialSelection);
+    setSelectedEmployee(null); 
+  };
+  const handleMouseEnterCell = (
+    employee: Employee, 
+    dayIndex: number,
+    e: React.MouseEvent
+  ) => {
+    if (!isDragging || !dragStart) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      top: rect.top,
+      left: rect.left + rect.width / 2,
+    });
+
+    const currentEmpIdx = getEmployeeIndex(employee.id);
+    const currentDayIdx = dayIndex;
+
+    const startEmp = Math.min(dragStart.empIdx, currentEmpIdx);
+    const endEmp = Math.max(dragStart.empIdx, currentEmpIdx);
+    const startDay = Math.min(dragStart.dayIdx, currentDayIdx);
+    const endDay = Math.max(dragStart.dayIdx, currentDayIdx);
+
+    const newSelection: { employeeId: string; date: Date; employee: Employee }[] = [];
+
+ 
+    for (let r = startEmp; r <= endEmp; r++) {
+      for (let c = startDay; c <= endDay; c++) {
+        const emp = flatEmployees[r];
+        const d = days[c];
+        
+        newSelection.push({
+          employeeId: emp.id.toString(),
+          date: d,
+          employee: emp
+        });
+      }
+    }
+
+    setMultiSelectedCells(newSelection);
+    
+    
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        setDragStart(null);
+      }
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [isDragging]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -124,41 +219,29 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     date: Date,
     event: React.MouseEvent<HTMLDivElement>
   ) => {
-    const cellElement = event.currentTarget;
-    const rect = cellElement.getBoundingClientRect();
-
-    if (!isSchedulePage && (event.ctrlKey || event.metaKey)) {
-      setSelectedEmployee(null);
-      setSelectedDate(null);
-      setSelectedCell(null);
-
-      setMultiSelectedCells((prev) => {
-        const exists = prev.find(
-          (cell) => cell.employeeId === employee.id.toString() && cell.date.toDateString() === date.toDateString()
-        );
-
-        if (exists) {
-          return prev.filter((cell) => cell !== exists);
-        } else {
-          setTooltipPosition({
-            top: rect.top, 
-            left: rect.left + rect.width / 2,
-          });
-          return [...prev, { employeeId: employee.id.toString(), date, employee }];
-        }
-      });
-    } else {
-      setMultiSelectedCells([]);
-
-      setSelectedEmployee(employee);
-      setSelectedDate(date);
+  
+    if (isDragging) return;
+    if (!isSchedulePage) {
+      const rect = event.currentTarget.getBoundingClientRect();
       setTooltipPosition({
-        top: rect.top, 
+        top: rect.top,
         left: rect.left + rect.width / 2,
       });
-      const existingShift = findShiftForDay(employee.id, date);
-      setSelectedCell(existingShift);
+      return; 
     }
+
+    setMultiSelectedCells([]);
+    setSelectedEmployee(employee);
+    setSelectedDate(date);
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      top: rect.top,
+      left: rect.left + rect.width / 2,
+    });
+
+    const existingShift = findShiftForDay(employee.id, date);
+    setSelectedCell(existingShift);
   };
 
   const handleCloseTooltip = () => {
@@ -695,6 +778,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         </div>
       );
     };
+    const dayIndex = days.findIndex(d => d.toDateString() === day.toDateString());
+
     return (
       <DroppableCell employee={employee} day={day} role={role}>
         <div
@@ -708,9 +793,15 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             cursor: "pointer", 
             userSelect: "none"
           }}
-          onMouseEnter={() => handleCellHover(day.getDate(), employee.id.toString(), role)}
+          onMouseDown={(e) => handleMouseDown(employee, day, dayIndex, e)}
+          onMouseEnter={(e) => {
+             handleCellHover(day.getDate(), employee.id.toString(), role);
+             handleMouseEnterCell(employee, dayIndex, e); 
+          }}
           onMouseLeave={handleCellLeave}
-          onClick={(e) => handleCellClick(employee, day, e)}
+          onClick={(e) => {
+             handleCellClick(employee, day, e); 
+          }}
         >
           {availability && (
             enableDragAndDrop ? (
