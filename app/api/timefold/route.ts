@@ -263,10 +263,15 @@ function generateMonthlyShifts(
             ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)})`
             : `${shift.startTime.slice(0, -3)}-${shift.endTime.slice(0, -3)}`;
 
-          const shiftCount =
-            roleSettings[role]?.[shiftString]?.[
-              dayName as keyof (typeof roleSettings)[typeof role][typeof shiftString]
-            ] || 0;
+          const settingsForRole = roleSettings[role] || {};
+
+          const matchingKeys = Object.keys(settingsForRole).filter(k => k.startsWith(shiftString));
+
+          const actualKey = matchingKeys.sort((a, b) => b.length - a.length)[0];
+
+          const dayConfig = actualKey ? (settingsForRole[actualKey] as Record<string, number>) : {};
+
+          const shiftCount = dayConfig[dayName] || 0;
 
           for (let i = 0; i < shiftCount; i++) {
             const { startTime, endTime } = getShiftTimes(shift, date);
