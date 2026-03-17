@@ -172,13 +172,14 @@ const EmployeeColumn: React.FC<EmployeeColumnProps> = ({
                     {/* Display total hours */}
                     {!showTooltips && (
                       <span className="text-xs text-gray-500 block">
-                        (
-                        {employeeHours[activeMonth.getMonth() + 1]?.get(employee.id)
-                          ? `${employeeHours[activeMonth.getMonth() + 1]
-                              .get(employee.id)
-                              ?.toFixed(2)} hrs`
-                          : "0 hrs"}
-                        )
+                        {(() => {
+                          const totalMinutes = employeeHours[activeMonth.getMonth() + 1]?.get(employee.id) || 0;
+                          
+                          const hours = Math.floor(totalMinutes / 60);
+                          const minutes = Math.round(totalMinutes % 60);
+
+                          return `(${hours}h ${minutes > 0 ? `${minutes}m` : ''})`;
+                        })()}
                       </span>
                     )}
                   </div>

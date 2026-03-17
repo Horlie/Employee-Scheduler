@@ -52,9 +52,10 @@ export default function Schedule() {
         const start = new Date(shift.start || shift.startDate);
         const end = new Date(shift.end || shift.finishDate);
         
-        let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        const diffMs = end.getTime() - start.getTime();
         
-        hours = Math.round(hours * 100) / 100;
+        
+        const minutes = diffMs / (1000 * 60);
 
         const shiftMonth = start.getMonth() + 1;
 
@@ -63,7 +64,7 @@ export default function Schedule() {
         }
 
         const currentTotal = totals[shiftMonth].get(shift.employeeId) || 0;
-        totals[shiftMonth].set(shift.employeeId, currentTotal + hours);
+        totals[shiftMonth].set(shift.employeeId, currentTotal + minutes);
       });
 
       setEmployeeHours(totals);
