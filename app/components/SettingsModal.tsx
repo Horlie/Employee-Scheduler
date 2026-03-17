@@ -109,7 +109,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         setIsLoading(false);
       }
     }
-  }, [isOpen, roles]);
+  }, [isOpen]);
 
   // Disable scrolling when modal is open
   useEffect(() => {
@@ -329,21 +329,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
         const data = await response.json();
         throw new Error(data.error || "Failed to import employees.");
       }
-      const data = await response.json();
-      data.employeesToCreate.forEach((employee: Employee) => {
-        setEmployees((prevEmployees) => [
-          ...prevEmployees,
-          {
-            id: new Date().getTime(),
-            name: employee.name,
-            roles: Array.isArray(employee.roles) ? employee.roles : [employee.roles || ""],
-            gender: employee.gender,
-            userId: userId,
-            rate: 1.0,
-          },
-        ]);
-      });
-      setUploadStatus(t('status.import_success'));
       const response2 = await fetch(`/api/employees?userId=${JSON.parse(localStorage.getItem("user") ?? "").id}`);
       if (!response2.ok) {
         throw new Error(`Failed to fetch employees: ${response2.statusText}`);
@@ -382,7 +367,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       setCreateEmployeeStatus(t('status.create_employee_success'));
       setEmployeeName("");
       setEmployeeRole("");
-      router.refresh();
     } catch (error: any) {
       console.error("Error creating employee:", error);
       setCreateEmployeeError(t('errors.create_employee_failed'));
