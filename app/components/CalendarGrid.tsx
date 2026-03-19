@@ -342,7 +342,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             const res = await fetch("/api/employee-availability", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ employeeId: Number(employeeId), startDate, finishDate, status: action }),
+                body: JSON.stringify({ employeeId: Number(employeeId), startDate, finishDate, status: action, isFullDay: isFullDay }),
             });
 
             if(res.ok) {
@@ -370,7 +370,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const handleAction = async (
     action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
     startDate: Date,
-    finishDate: Date
+    finishDate: Date,
+    isFullDay: boolean = false
   ) => {
     if (selectedEmployee && selectedDate) {
       const cellKey = `${selectedEmployee.id}-${
@@ -489,6 +490,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               startDate: startDate,
               finishDate: finishDate,
               status,
+              isFullDay: isFullDay,
             }),
           });
           if (response.ok) {
@@ -505,7 +507,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               startDate: startDate.toISOString(),
               finishDate: finishDate.toISOString(),
               status,
-              isFullDay: false,
+              isFullDay: isFullDay,
             };
             setAvailabilityData((prev) => [...prev, newAvailability]);
           } else {
