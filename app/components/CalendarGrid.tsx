@@ -319,6 +319,19 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
            } catch (e) { console.error(e); }
         }
       } else {
+        const existingAvailability = availabilityData.find(
+          (a) => a.employeeId === Number(employeeId) && new Date(a.startDate).toDateString() === date.toDateString()
+        );
+        
+        if (existingAvailability) {
+          try {
+            const oldStartDateStr = typeof existingAvailability.startDate === "string" 
+              ? existingAvailability.startDate 
+              : existingAvailability.startDate.toISOString();
+              
+            await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${encodeURIComponent(oldStartDateStr)}`, { method: "DELETE" });
+          } catch (e) { console.error("Error deleting old availability:", e); }
+        }
         const startDate = new Date(date);
         const finishDate = new Date(date);
 
@@ -426,13 +439,12 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         );
         if (existingAvailability) {
           try {
+            const oldStartDateStr = typeof existingAvailability.startDate === "string"
+              ? existingAvailability.startDate
+              : existingAvailability.startDate.toISOString();
+
             const deleteResponse = await fetch(
-              `/api/employee-availability?employeeId=${
-                selectedEmployee.id
-              }&startDate=${      
-                typeof existingAvailability.startDate === "string"
-                ? existingAvailability.startDate.split("T")[0]
-                : existingAvailability.startDate.toISOString().split("T")[0]}`,
+              `/api/employee-availability?employeeId=${selectedEmployee.id}&startDate=${encodeURIComponent(oldStartDateStr)}`,
               {
                 method: "DELETE",
               }
