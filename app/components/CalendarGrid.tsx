@@ -76,6 +76,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const { t } = useTranslation();
   const pathname = usePathname();
   const isSchedulePage = pathname === "/schedule";
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   
   const flatEmployees = useMemo(() => {
     return groupedEmployees.flatMap(([_, emps]) => emps);
@@ -217,6 +218,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const handleCellClick = (
     employee: Employee,
     date: Date,
+    role: string,
     event: React.MouseEvent<HTMLDivElement>
   ) => {
   
@@ -233,6 +235,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     setMultiSelectedCells([]);
     setSelectedEmployee(employee);
     setSelectedDate(date);
+    setSelectedRole(role);
     
     const rect = event.currentTarget.getBoundingClientRect();
     setTooltipPosition({
@@ -252,16 +255,26 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   const handleSaveShift = (shiftToSave: EmployeeAvailability) => {
+     if (!shiftToSave.id || Number(shiftToSave.id) <= 0 || shiftToSave.id === "") {
+      shiftToSave.id = -Math.floor(Math.random() * 1000000000);
+    }
     setScheduleData(prevShifts => {
-      const index = prevShifts.findIndex(s => s.id === shiftToSave.id);
+      const index = prevShifts.findIndex(s => 
+        s.employeeId === shiftToSave.employeeId &&
+        new Date(s.startDate).toDateString() === new Date(shiftToSave.startDate).toDateString()
+      );
+      const existingShift = index > -1 ? prevShifts[index] : null;
+      const updatedShift = { ...shiftToSave } as EmployeeAvailability; 
+
+      (updatedShift as any).role = (shiftToSave as any).role || (existingShift as any)?.role || selectedRole  || null;
+
       if (index > -1) {
-        const newShifts = [...prevShifts];
-        newShifts[index] = shiftToSave;
+        const newShifts =[...prevShifts];
+        newShifts[index] = updatedShift; 
         return newShifts;
       }
-      return [...prevShifts, shiftToSave];
+      return [...prevShifts, updatedShift];
     });
-    handleCloseTooltip();
   
     console.log(shiftToSave);
     handleCloseTooltip();
@@ -800,7 +813,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           }}
           onMouseLeave={handleCellLeave}
           onClick={(e) => {
-             handleCellClick(employee, day, e); 
+             handleCellClick(employee, day, role, e); 
           }}
         >
           {availability && (
@@ -808,13 +821,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               <DraggableShift shift={availability}>
                   {renderShiftContent(availability, isPlanningFullDay, (e) => {
                     e.stopPropagation(); 
-                    handleCellClick(employee, day, e);
+                    handleCellClick(employee, day, role, e);
                   })}
               </DraggableShift>
             ) : (
               renderShiftContent(availability, isPlanningFullDay, (e) => {
                 e.stopPropagation(); 
-                handleCellClick(employee, day, e);
+                handleCellClick(employee, day, role, e);
               })
             )
           )}
@@ -824,13 +837,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
                   {renderShiftContent(schedule, isScheduleFullDay, (e) => {
                     e.stopPropagation(); 
-                    handleCellClick(employee, day, e);
+                    handleCellClick(employee, day, role, e);
                   })}
               </DraggableShift>
             ) : (
               renderShiftContent(schedule, isScheduleFullDay, (e) => {
                 e.stopPropagation(); 
-                handleCellClick(employee, day, e);
+                handleCellClick(employee, day, role, e);
               })
             )
           )}
