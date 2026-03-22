@@ -11,7 +11,8 @@ interface EmployeeEventTooltipProps {
   onAction?: (
     action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
     startDate: Date,
-    finishDate: Date
+    finishDate: Date,
+    isFullDay: boolean
   ) => void;
 
   selectedCount?: number;
@@ -54,7 +55,7 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
         startDate.setHours(startHours, startMinutes, 0, 0);
         finishDate.setHours(endHours, endMinutes, 0, 0);
       }
-      onAction(action, startDate, finishDate);
+      onAction(action, startDate, finishDate, isFullDay);
     }
   };
 

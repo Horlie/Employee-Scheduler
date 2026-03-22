@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   try {
     await prisma.$connect();
 
-    const { employeeId, startDate, finishDate, status } = await request.json();
+    const { employeeId, startDate, finishDate, status, isFullDay } = await request.json();
     const availability = await prisma.employeeAvailability.upsert({
       where: {
         employeeId_startDate: {
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
         startDate: convertLocalDateToUTCIgnoringTimezone(new Date(startDate)),
         finishDate: convertLocalDateToUTCIgnoringTimezone(new Date(finishDate)),
         status,
+        isFullDay: isFullDay,
       },
     });
 
