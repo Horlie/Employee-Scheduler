@@ -97,10 +97,10 @@ export default function Schedule() {
         return {
           id: shiftId,
           employeeId: shift.employeeId,
-          start: new Date(shift.start.slice(0, -1)),
-          end: new Date(shift.end.slice(0, -1)),
-          startDate: new Date(shift.start.slice(0, -1)),
-          finishDate: new Date(shift.end.slice(0, -1)),
+          start: new Date(shift.start),
+          end: new Date(shift.end),
+          startDate: new Date(shift.start),
+          finishDate: new Date(shift.end),
           status: "scheduled",
           employee,
           role: (shift as any).role, // Store the role for filtering

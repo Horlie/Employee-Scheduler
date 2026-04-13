@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     await prisma.$connect();
 
     const { employeeId, month } = await req.json();
-
+    
     try {
       // Fetch employees with their availabilities and roles
       // Fetch all employees with their user information
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
           const retryText = await retryResponse.text();
           statusData = JSON.parse(retryText);
         }
-
+        
         return { [role]: statusData };
       });
 
@@ -285,7 +285,7 @@ function generateMonthlyShifts(
            if (shouldSplitShift && splitHourString) {
               const splitHour = parseInt(splitHourString.split(':')[0], 10);
 
-              const midTime = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), splitHour, 0, 0);
+              const midTime = new Date(Date.UTC(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), splitHour, 0, 0));
               const requiredGenders = [];
               if (shift.gender) {
                 const shiftGenders: string[] = typeof shift.gender === 'string' && shift.gender.includes(',')
@@ -363,17 +363,17 @@ function parseShiftTimes(
   const [startHour, startMinute, startSecond] = startTimeStr.split(":").map(Number);
   const [endHour, endMinute, endSecond] = endTimeStr.split(":").map(Number);
 
-  const startTime = new Date(
+  const startTime = new Date(Date.UTC(
       date.getFullYear(),
       date.getMonth(),
       date.getDate(),
       startHour,
       startMinute,
       startSecond
-    );
+    ));
 
   let endTime = 
-    new Date(date.getFullYear(), date.getMonth(), date.getDate(), endHour, endMinute, endSecond);
+    new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), endHour, endMinute, endSecond));
 
   // If end time is earlier than start time, assume it goes to the next day
   if (endTime <= startTime) {
