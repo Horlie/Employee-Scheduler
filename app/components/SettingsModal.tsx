@@ -156,40 +156,35 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
   const validateAndCorrectTime = (time: string): string => {
     if (!time) return ""; 
 
-    const [hoursStr = '00', minutesStr = '00'] = time.split(':');
-    let hours = parseInt(hoursStr, 10);
-    let minutes = parseInt(minutesStr, 10);
+    let [hoursStr = '00', minutesStr = '00'] = time.split(':');
+    let hours = parseInt(hoursStr, 10) || 0;
+    let minutes = parseInt(minutesStr, 10) || 0;
 
-    if (isNaN(hours)) hours = 0;
-    if (isNaN(minutes)) minutes = 0;
+    hours = Math.min(Math.max(0, hours), 23);
+    minutes = Math.min(Math.max(0, minutes), 59);
 
-    if (hours > 23) {
-      const firstDigit = parseInt(String(hours).charAt(0), 10);
-      if (firstDigit >= 3 && firstDigit <= 9) {
-        hours = firstDigit;
-      } else {
-        hours = 23;
-      }
-    }
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
 
-    if (minutes > 59) {
-      minutes = 59;
-    }
+  const ensureSeconds = (time: string) => {
+    if (!time) return "00:00:00";
+    const parts = time.split(':');
+    if (parts.length === 2) return `${time}:00`;
+    if (parts.length === 3) return time;
+    return "00:00:00";
+  };
 
-    const formattedHours = String(hours).padStart(2, '0');
-    const formattedMinutes = String(minutes).padStart(2, '0');
-
-    return `${formattedHours}:${formattedMinutes}`;
+  const stripSeconds = (time: string) => {
+    if (!time) return "";
+    return time.split(':').slice(0, 2).join(':');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (shiftDays.length < 1) {
-      // setError(t('errors.select_at_least_one_day'));
       return;
     }
     if (selectedRoles.length < 1) {
-      // setError(t('errors.select_at_least_one_role'));
       return;
     }
     if (!startTime || !endTime) {
@@ -199,8 +194,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     const newShift: Shift = {
       id: 0,
       userId,
-      startTime: startTime + ":00",
-      endTime: endTime + ":00",
+      startTime: ensureSeconds(startTime),
+      endTime: ensureSeconds(endTime),
       days: shiftDays,
       roles: selectedRoles,
       isFullDay: isFullDay,
@@ -212,9 +207,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     setRoleSettings(prevSettings => {
       const newSettings = { ...prevSettings }; 
       
+      const startStr = stripSeconds(newShift.startTime);
+      const endStr = stripSeconds(newShift.endTime);
+
       const shiftString = newShift.isFullDay
-        ? `FullDay (${newShift.startTime.slice(0, -3)} - ${newShift.endTime.slice(0, -3)})`
-        : `${newShift.startTime.slice(0, -3)}-${newShift.endTime.slice(0, -3)}`;
+        ? `FullDay (${startStr} - ${endStr})`
+        : `${startStr}-${endStr}`;
 
       newShift.roles.forEach(role => {
         if (!newSettings[role]) {
@@ -388,14 +386,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
       .filter((shift) => shift.roles.includes(role))
       .map((shift) =>
         shift.isFullDay
-          ? `FullDay (${shift.startTime.slice(0, -3)} - ${shift.endTime.slice(0, -3)}) (${
+          ? `FullDay (${stripSeconds(shift.startTime)} - ${stripSeconds(shift.endTime)}) (${
               typeof shift.gender === "string"
                 ? shift.gender.split(",").map(g => t('settings_tab.' + g.toLowerCase())).join(", ")
                 : Array.isArray(shift.gender)
                   ? shift.gender.map(g => t('settings_tab.' + g.toLowerCase())).join(", ")
                   : ""
             })`
-          : `${shift.startTime.slice(0, -3)}-${shift.endTime.slice(0, -3)} (${
+          : `${stripSeconds(shift.startTime)}-${stripSeconds(shift.endTime)} (${
               typeof shift.gender === "string"
                 ? shift.gender.split(",").map(g => t('settings_tab.' + g.toLowerCase())).join(", ")
                 : Array.isArray(shift.gender)
@@ -410,12 +408,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, roles })
     const dayKey = `settings_tab.${day.toLowerCase()}`;
     return t(dayKey);
   };
-  // console.log("Form State:", { 
-  //   employeeName, 
-  //   employeeRole, 
-  //   employeeGender, 
-  //   userId 
-  // });
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
