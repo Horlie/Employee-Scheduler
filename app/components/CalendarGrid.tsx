@@ -263,37 +263,55 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   const handleSaveShift = (shiftToSave: EmployeeAvailability) => {
-     if (!shiftToSave.id || Number(shiftToSave.id) <= 0 || shiftToSave.id === "") {
-      shiftToSave.id = -Math.floor(Math.random() * 1000000000);
+    let index = -1;
+    if (shiftToSave.id && Number(shiftToSave.id) > 0) {
+      index = scheduleData.findIndex(s => s.id === shiftToSave.id);
     }
+    if (index === -1) {
+      index = scheduleData.findIndex(s => {
+        const d1 = new Date(s.startDate);
+        const d2 = new Date(shiftToSave.startDate);
+        return s.employeeId === shiftToSave.employeeId &&
+               d1.getUTCFullYear() === d2.getUTCFullYear() &&
+               d1.getUTCMonth() === d2.getUTCMonth() &&
+               d1.getUTCDate() === d2.getUTCDate();
+      });
+    }
+
+      
+    const existingShift = index > -1 ? scheduleData[index] : null;
+
+    const updatedShift = { ...shiftToSave } as EmployeeAvailability;
+
+    if (existingShift) {
+      updatedShift.id = existingShift.id;
+    } else if (!updatedShift.id || Number(updatedShift.id) <= 0) {
+      updatedShift.id = -Math.floor(Math.random() * 1000000000);
+    }
+
+    (updatedShift as any).role = (shiftToSave as any).role || (existingShift as any)?.role || selectedRole || null;
+
     setScheduleData(prevShifts => {
-      const index = prevShifts.findIndex(s => 
-        s.employeeId === shiftToSave.employeeId &&
-        new Date(s.startDate).toDateString() === new Date(shiftToSave.startDate).toDateString()
-      );
-      const existingShift = index > -1 ? prevShifts[index] : null;
-      const updatedShift = { ...shiftToSave } as EmployeeAvailability; 
-
-      (updatedShift as any).role = (shiftToSave as any).role || (existingShift as any)?.role || selectedRole  || null;
-
+      const newShifts = [...prevShifts];
       if (index > -1) {
-        const newShifts =[...prevShifts];
-        newShifts[index] = updatedShift; 
-        return newShifts;
+        newShifts[index] = updatedShift;
+      } else {
+        newShifts.push(updatedShift);
       }
-      return [...prevShifts, updatedShift];
+      return newShifts;
     });
   
-    console.log(shiftToSave);
     handleCloseTooltip();
-    const cellKey = `${shiftToSave.employeeId}-${
-      new Date(shiftToSave.startDate).toISOString().split("T")[0]
+    const cellKey = `${updatedShift.employeeId}-${
+      new Date(updatedShift.startDate).toISOString().split("T")[0]
     }`;
+
     setCellColors(prev => ({
       ...prev,
       [cellKey]: "bg-purple-100",
-    }))
-    if (shiftToSave) isScheduleFullDay.set(shiftToSave.id, shiftToSave.isFullDay!);
+    }));
+
+    isScheduleFullDay.set(updatedShift.id, updatedShift.isFullDay!);
     onScheduleChange();
   };
 

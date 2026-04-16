@@ -14,19 +14,15 @@ interface ShiftTooltipProps {
 }
 
 const formatDateToTime = (date: Date): string => {
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const hours = date.getUTCHours().toString().padStart(2, '0');
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0');
   return `${hours}:${minutes}`;
 };
 
 const isOneDayApartByDate = (startDate: Date, endDate: Date) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-  
-  const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-  return diffDays === 1;
+  const durationMs = endDate.getTime() - startDate.getTime();
+  const hours = durationMs / (1000 * 60 * 60);
+  return hours >= 23.9; 
 };
 
 export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
@@ -49,7 +45,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
       const finishDate = new Date(shift.finishDate);
       setStartTime(formatDateToTime(startDate));
       setEndTime(formatDateToTime(finishDate));
-      setIsFullDay(isOneDayApartByDate(new Date(shift.startDate), new Date(shift.finishDate)) ? true : false);
+      setIsFullDay(isOneDayApartByDate(startDate, finishDate));
     } else {
       // Reset to default for new shift
       setStartTime('09:00');
@@ -61,7 +57,6 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
   const handleFullDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setIsFullDay(checked);
-    setStartTime(startTime);
     checked ? setEndTime(startTime) : setEndTime("17:00");
   };
 
@@ -69,18 +64,26 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
     const [startHour, startMinute] = startTime.split(':').map(Number);
     const [endHour, endMinute] = endTime.split(':').map(Number);
 
-    const newStartDate = new Date(date);
-    newStartDate.setHours(startHour, startMinute, 0, 0);
-    const newFinishDate = new Date(date);
-    newFinishDate.setHours(endHour, endMinute, 0, 0);
-    
-    // Handle overnight shifts
-    if (newFinishDate <= newStartDate) {
-      newFinishDate.setDate(newFinishDate.getDate() + 1);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+
+    const newStartDate = new Date(Date.UTC(year, month, day, startHour, startMinute, 0));
+    let newFinishDate: Date;
+
+    if (isFullDay) {
+      newFinishDate = new Date(newStartDate.getTime() + 24 * 60 * 60 * 1000);
+    } else {
+      const [endHour, endMinute] = endTime.split(':').map(Number);
+      newFinishDate = new Date(Date.UTC(year, month, day, endHour, endMinute, 0));
+      
+      if (newFinishDate <= newStartDate) {
+        newFinishDate.setUTCDate(newFinishDate.getUTCDate() + 1);
+      }
     }
 
     const shiftPayload: EmployeeAvailability = {
-      id: shift?.id || -1,
+      id: shift?.id || 0,
       employeeId,
       startDate: newStartDate,
       finishDate: newFinishDate,
@@ -118,7 +121,7 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
           {shift ? t('shift_tooltip.edit_shift') : t('shift_tooltip.add_shift')}
         </h3>
         <p className="text-sm text-slate-500 mb-4">
-          {date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          {date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })}
         </p>
 
         <div className="space-y-4">
@@ -144,13 +147,16 @@ export const ShiftTooltip: React.FC<ShiftTooltipProps> = ({
                 type="time"
                 id="start-time"
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                onChange={(e) => {
+                  setStartTime(e.target.value);
+                  if (isFullDay) setEndTime(e.target.value); 
+                }}
                 className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
               />
             </div>
             <div>
               <label htmlFor="end-time" className="block text-sm font-medium text-slate-700">
-                {t('shift_tooltip.end')}
+                {t('shift_tooltip.end')} 
               </label>
               <input
                 type="time"
