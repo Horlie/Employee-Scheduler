@@ -231,8 +231,8 @@ function generateMonthlyShifts(
   const employeesInRole = allEmployees.filter(emp => emp.roles.includes(role));
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
+    const date = new Date(Date.UTC(year, month, day, 0, 0, 0));
+    const dayOfWeek = date.getUTCDay();
     const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
       dayOfWeek
     ];
@@ -364,17 +364,22 @@ function parseShiftTimes(
   const [endHour, endMinute, endSecond] = endTimeStr.split(":").map(Number);
 
   const startTime = new Date(Date.UTC(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
       startHour,
       startMinute,
       startSecond
     ));
 
-  let endTime = 
-    new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), endHour, endMinute, endSecond));
-
+  let endTime = new Date(Date.UTC(
+      date.getUTCFullYear(), 
+      date.getUTCMonth(), 
+      date.getUTCDate(), 
+      endHour, 
+      endMinute,
+      endSecond
+    ));
   // If end time is earlier than start time, assume it goes to the next day
   if (endTime <= startTime) {
     endTime = new Date(endTime.getTime() + 24 * 60 * 60 * 1000);

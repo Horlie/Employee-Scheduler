@@ -209,10 +209,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   }, [selectedEmployee, multiSelectedCells]);
 
   const findShiftForDay = (employeeId: number, date: Date): EmployeeAvailability | null => {
-    return scheduleData.find(s =>
-      s.employeeId === employeeId &&
-      new Date(s.startDate).toDateString() === date.toDateString()
-    ) ?? null;
+    return scheduleData.find(s =>{ 
+      const sDate = new Date(s.startDate);
+      return s.employeeId === employeeId &&
+        sDate.getUTCFullYear() === date.getUTCFullYear() &&
+        sDate.getUTCMonth() === date.getUTCMonth() &&
+        sDate.getUTCDate() === date.getUTCDate();
+      }) ?? null;
   };
 
   const handleCellClick = (
@@ -223,19 +226,24 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   ) => {
   
     if (isDragging) return;
+
     if (!isSchedulePage) {
+      setSelectedEmployee(employee);
+      setSelectedDate(date);
+      setSelectedRole(role);
+
       const rect = event.currentTarget.getBoundingClientRect();
       setTooltipPosition({
         top: rect.top,
         left: rect.left + rect.width / 2,
       });
-      return; 
     }
-
-    setMultiSelectedCells([]);
-    setSelectedEmployee(employee);
-    setSelectedDate(date);
-    setSelectedRole(role);
+    else{
+      setMultiSelectedCells([]);
+      setSelectedEmployee(employee);
+      setSelectedDate(date);
+      setSelectedRole(role);
+    }
     
     const rect = event.currentTarget.getBoundingClientRect();
     setTooltipPosition({
@@ -279,9 +287,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     console.log(shiftToSave);
     handleCloseTooltip();
     const cellKey = `${shiftToSave.employeeId}-${
-      typeof shiftToSave.startDate === "string"
-      ? shiftToSave.startDate.split("T")[0]
-      : shiftToSave.startDate.toISOString().split("T")[0]
+      new Date(shiftToSave.startDate).toISOString().split("T")[0]
     }`;
     setCellColors(prev => ({
       ...prev,
@@ -345,17 +351,21 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${encodeURIComponent(oldStartDateStr)}`, { method: "DELETE" });
           } catch (e) { console.error("Error deleting old availability:", e); }
         }
-        const startDate = new Date(date);
-        const finishDate = new Date(date);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const day = date.getDate();
+
+        let startDate: Date;
+        let finishDate: Date;
 
         if (isFullDay) {
-            startDate.setHours(0, 0, 0, 0);
-            finishDate.setHours(23, 59, 59, 999);
+            startDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+            finishDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
         } else {
-            const [sh, sm] = startTimeStr.split(":").map(Number);
-            const [eh, em] = endTimeStr.split(":").map(Number);
-            startDate.setHours(sh, sm, 0, 0);
-            finishDate.setHours(eh, em, 0, 0);
+            const [startHours, startMinutes] = startTimeStr.split(":").map(Number);
+            const [endHours, endMinutes] = endTimeStr.split(":").map(Number);
+            startDate = new Date(Date.UTC(year, month, day, startHours, startMinutes, 0));
+            finishDate = new Date(Date.UTC(year, month, day, endHours, endMinutes, 0));
         }
 
         let newColor = "";
@@ -368,7 +378,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             const res = await fetch("/api/employee-availability", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ employeeId: Number(employeeId), startDate, finishDate, status: action, isFullDay: isFullDay }),
+                body: JSON.stringify({ employeeId: Number(employeeId), startDate: startDate.toISOString(), finishDate: finishDate.toISOString(), status: action, isFullDay: isFullDay }),
             });
 
             if(res.ok) {
@@ -505,15 +515,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         }
 
         try {
-          // Convert local dates to UTC
-
+          
           const response = await fetch("/api/employee-availability", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               employeeId: Number(selectedEmployee.id),
-              startDate: startDate,
-              finishDate: finishDate,
+              startDate: startDate.toISOString(),
+              finishDate: finishDate.toISOString(),
               status,
               isFullDay: isFullDay,
             }),
@@ -761,14 +770,19 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     // Filter schedule shifts by role - only show shifts that match the current role group
     // For backward compatibility, show shifts without a role in all groups
     const schedule = scheduleData.find(
-      (a: EmployeeAvailability & { role?: string }) =>
-        a.employeeId === Number(employee.id) &&
-        new Date(a.startDate).toDateString() === day.toDateString() &&
-        (a.role === undefined || a.role === null || a.role === role) // Only show shift if it matches the current role group (or has no role for backward compatibility)
+      (a: EmployeeAvailability & { role?: string }) => {
+        const aDate = new Date(a.startDate);
+        return a.employeeId === Number(employee.id) &&
+          aDate.getUTCFullYear() === day.getUTCFullYear() &&
+          aDate.getUTCMonth() === day.getUTCMonth() &&
+          aDate.getUTCDate() === day.getUTCDate() &&
+          (a.role === undefined || a.role === null || a.role === role) // Only show shift if it matches the current role group (or has no role for backward compatibility)
+      }
     );
+
     const formatTime = (date: Date | string) => {
       const dateObj = typeof date === 'string' ? new Date(date) : date;
-      return dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
+      return dateObj.getUTCHours().toString().padStart(2, '0') + ':' + dateObj.getUTCMinutes().toString().padStart(2, '0');
     }
 
     const isHovered = hoveredDay === day.getDate() && hoveredEmployee === employee.id.toString();
@@ -916,11 +930,17 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               onClose={handleCloseTooltip}
               
               selectedCount={multiSelectedCells.length}
-              onMultiAction={multiSelectedCells.length > 0 ? handleMultiAction : undefined}
+              onMultiAction={multiSelectedCells.length > 1 ? handleMultiAction : undefined}
 
-              employee={multiSelectedCells.length === 0 ? (selectedEmployee ?? undefined) : undefined}
-              date={multiSelectedCells.length === 0 ? (selectedDate ?? undefined) : undefined}
-              onAction={multiSelectedCells.length === 0 ? handleAction : undefined}
+              employee={multiSelectedCells.length === 1 
+                  ? multiSelectedCells[0].employee 
+                  : (multiSelectedCells.length === 0 ? (selectedEmployee ?? undefined) : undefined)
+              }
+              date={multiSelectedCells.length === 1 
+                  ? multiSelectedCells[0].date 
+                  : (multiSelectedCells.length === 0 ? (selectedDate ?? undefined) : undefined)
+              }
+              onAction={multiSelectedCells.length === 1 ? handleAction : undefined}
             />
           </div>
         )}

@@ -57,7 +57,7 @@ export default function Schedule() {
         
         const minutes = diffMs / (1000 * 60);
 
-        const shiftMonth = start.getMonth() + 1;
+        const shiftMonth = start.getUTCMonth() + 1;
 
         if (!totals[shiftMonth]) {
           totals[shiftMonth] = new Map();
@@ -146,10 +146,9 @@ export default function Schedule() {
         }
       }
 
-      const cellKey = `${availability.employeeId}-${format(
-        shiftStart,
-        "yyyy-MM-dd"
-      )}`;
+      const cellKey = `${availability.employeeId}-${
+        new Date(availability.startDate).toISOString().split("T")[0]
+      }`;
       newCellColors[cellKey] = cellColor;
       
     });
