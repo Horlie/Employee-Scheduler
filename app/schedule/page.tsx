@@ -227,23 +227,21 @@ export default function Schedule() {
     try {
       
       const changedSchedule = scheduleData.filter((item) => {
-        const original = originalScheduleData.find(orig => orig.id === item.id);
+        const original = originalScheduleData.find(orig => String(orig.id) === String(item.id));
         
         if (!original) return true;
 
-        const itemStart = item.start ? new Date(item.start).getTime() : new Date(item.startDate).getTime();
-        const originalStart = original.start ? new Date(original.start).getTime() : new Date(original.startDate).getTime();
-        
-        const itemEnd = item.end ? new Date(item.end).getTime() : new Date(item.finishDate).getTime();
-        const originalEnd = original.end ? new Date(original.end).getTime() : new Date(original.finishDate).getTime();
+        const itemStart = new Date(item.startDate).toISOString();
+        const originalStart = new Date(original.startDate).toISOString();
 
-        const startChanged = itemStart !== originalStart;
-        const endChanged = itemEnd !== originalEnd;
+        const itemEnd = new Date(item.finishDate).toISOString();
+        const originalEnd = new Date(original.finishDate).toISOString();
+
+        const timeChanged = itemStart !== originalStart || itemEnd !== originalEnd;
         const fullDayChanged = item.isFullDay !== original.isFullDay;
-        
-        const employeeChanged = Number(item.employeeId) !== Number(original.employeeId); 
+        const employeeChanged = Number(item.employeeId) !== Number(original.employeeId);
 
-        return startChanged || endChanged || fullDayChanged || employeeChanged;
+        return timeChanged || fullDayChanged || employeeChanged;
       });
       const deletedShiftIds = originalScheduleData
         .filter(orig => !scheduleData.find(curr => curr.id === orig.id))

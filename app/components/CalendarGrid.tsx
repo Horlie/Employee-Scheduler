@@ -589,12 +589,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       alert(t('calendar.error_move_role'));
       return;
     }
+    const isSameDayUTC = (d1: Date | string, d2: Date) => {
+        const date1 = new Date(d1);
+        return date1.getUTCFullYear() === d2.getUTCFullYear() &&
+               date1.getUTCMonth() === d2.getUTCMonth() &&
+               date1.getUTCDate() === d2.getUTCDate();
+    };
     
     const shiftsInTargetCell = scheduleData.filter(
       (s: EmployeeAvailability) =>
-        s.id !== draggedShift.id &&
+        String(s.id) !== String(draggedShift.id) &&
         s.employeeId === targetEmployeeId &&
-        s.start && new Date(s.start).toDateString() === targetDate.toDateString()
+        isSameDayUTC(s.startDate, targetDate)
     );
 
     if (shiftsInTargetCell.length > 0) {
@@ -618,8 +624,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     }
 
     const duration = new Date(draggedShift.finishDate!).getTime() - oldStartDate.getTime();
-    const newStartDate = new Date(targetDate);
-    newStartDate.setHours(oldStartDate.getHours(), oldStartDate.getMinutes(), oldStartDate.getSeconds());
+    const newStartDate = new Date(Date.UTC(
+        targetDate.getFullYear(),
+        targetDate.getMonth(),
+        targetDate.getDate(),
+        oldStartDate.getUTCHours(),
+        oldStartDate.getUTCMinutes(),
+        0
+    ));
     const newFinishDate = new Date(newStartDate.getTime() + duration);
 
     if (isNaN(newStartDate.getTime()) || isNaN(newFinishDate.getTime())) {
@@ -643,28 +655,31 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       )
     );
     setCellColors(prev => {
+      const oldDateKey = new Date(draggedShift.startDate).toISOString().split("T")[0];
+      const newDateKey = newStartDate.toISOString().split("T")[0];
+      
+      const oldCellKey = `${draggedShift.employeeId}-${oldDateKey}`;
+      const newCellKey = `${targetEmployeeId}-${newDateKey}`;
+      
+      const updated = { ...prev };
+      const color = updated[oldCellKey] || "bg-purple-100";
+      delete updated[oldCellKey]; 
+      updated[newCellKey] = color; 
+      return updated;
+    });
     
-    const oldCellKey = `${draggedShift.employeeId}-${      
-      typeof draggedShift.startDate === "string"
-      ? draggedShift.startDate.split("T")[0]
-      : draggedShift.startDate.toISOString().split("T")[0]}`;
-    const newCellKey = `${targetEmployeeId}-${newStartDate.toISOString().split("T")[0]}`;
-    
-    let newColor = prev[oldCellKey] || "bg-purple-100";
-    if (draggedShift.status === "preferable") newColor = "bg-green-200";
-    if (draggedShift.status === "unavailable") newColor = "bg-yellow-200";
-    if (draggedShift.status === "unreachable") newColor = "bg-red-200";
-    if (draggedShift.status === "vacation") newColor = "bg-blue-200";
-    if (oldStartDate.toDateString() !== targetDate.toDateString()) {   
-    }
-    
-    const updated = { ...prev };
-    delete updated[oldCellKey]; 
-    updated[newCellKey] = newColor; 
-    return updated;
-  });
-  onScheduleChange();
-    
+    const updatedShiftInState = {
+        ...draggedShift,
+        employeeId: targetEmployeeId,
+        startDate: newStartDate.toISOString(),
+        finishDate: newFinishDate.toISOString(),
+    };
+    setSelectedDate(newStartDate); 
+    setSelectedEmployee(employees.find(e => e.id === targetEmployeeId) || null);
+    setSelectedCell(updatedShiftInState);
+
+    onScheduleChange();
+       
 
   };
   
