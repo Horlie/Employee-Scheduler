@@ -340,34 +340,39 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     endTimeStr: string,
     isFullDay: boolean
   ) => {
+
+    const idsToRemove: (number | string)[] = [];
+    const keysToRemove: string[] = [];
+    const newAvailabilities: EmployeeAvailability[] = [];
+    const colorsToUpdate: Record<string, string> = {};
+
     const promises = multiSelectedCells.map(async (cell) => {
       const { employeeId, date } = cell;
-      const cellKey = `${employeeId}-${date.toISOString().split("T")[0]}`;
+
+      const dateKey = date.toISOString().split("T")[0];
+      const cellKey = `${employeeId}-${dateKey}`;
+
+      const existing = availabilityData.find(
+        (a) => a.employeeId === Number(employeeId) && 
+        new Date(a.startDate).getUTCDate() === date.getUTCDate() 
+      );
 
       if (action === "delete") {
-        const availability = availabilityData.find(
-          (a) => a.employeeId === Number(employeeId) && new Date(a.startDate).toDateString() === date.toDateString()
-        );
-        if (availability) {
-           try {
-             await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${availability.startDate}`, { method: "DELETE" });
-             setCellColors((prev) => { const n = { ...prev }; delete n[cellKey]; return n; });
-             setAvailabilityData((prev) => prev.filter(a => a.id !== availability.id));
-           } catch (e) { console.error(e); }
+        if (existing) {
+          try {
+            const res = await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${existing.startDate}`, { method: "DELETE" });
+            if (res.ok) {
+              idsToRemove.push(existing.id);
+              keysToRemove.push(cellKey);
+            }
+          } catch (e) { console.error(`Failed to delete cell ${cellKey}`, e); }
         }
       } else {
-        const existingAvailability = availabilityData.find(
-          (a) => a.employeeId === Number(employeeId) && new Date(a.startDate).toDateString() === date.toDateString()
-        );
-        
-        if (existingAvailability) {
+        if (existing) {
           try {
-            const oldStartDateStr = typeof existingAvailability.startDate === "string" 
-              ? existingAvailability.startDate 
-              : existingAvailability.startDate.toISOString();
-              
-            await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${encodeURIComponent(oldStartDateStr)}`, { method: "DELETE" });
-          } catch (e) { console.error("Error deleting old availability:", e); }
+            await fetch(`/api/employee-availability?employeeId=${employeeId}&startDate=${encodeURIComponent(existing.startDate.toString())}`, { method: "DELETE" });
+            idsToRemove.push(existing.id);
+          } catch (e) { console.error(`Failed to clear old cell ${cellKey}`, e); }
         }
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -399,28 +404,32 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                 body: JSON.stringify({ employeeId: Number(employeeId), startDate: startDate.toISOString(), finishDate: finishDate.toISOString(), status: action, isFullDay: isFullDay }),
             });
 
-            if(res.ok) {
-                setCellColors((prev) => ({ ...prev, [cellKey]: newColor }));
-                setAvailabilityData(prev => prev.filter(a => !(a.employeeId === Number(employeeId) && new Date(a.startDate).toDateString() === date.toDateString())));
-                
-                const newAvail: EmployeeAvailability = {
-                    id: Date.now() + Math.random(),
-                    employeeId: Number(employeeId),
-                    startDate: startDate.toISOString(),
-                    finishDate: finishDate.toISOString(),
-                    status: action,
-                    isFullDay: isFullDay,
-                };
-                setAvailabilityData((prev) => [...prev, newAvail]);
-            }
-        } catch (e) { console.error(e); }
+            if (res.ok) {
+            const { availability: savedAvail } = await res.json();
+            newAvailabilities.push(savedAvail);
+            colorsToUpdate[cellKey] = newColor;
+          }
+        } catch (e) { console.error(`Failed to save cell ${cellKey}`, e); }
       }
     });
 
     await Promise.all(promises);
+
+    setAvailabilityData(prev => {
+      const filtered = prev.filter(a => !idsToRemove.includes(a.id));
+      return [...filtered, ...newAvailabilities];
+    });
+
+    setCellColors(prev => {
+      const nextColors = { ...prev };
+      keysToRemove.forEach(key => delete nextColors[key]);
+      return { ...nextColors, ...colorsToUpdate };
+    });
+
     setMultiSelectedCells([]);
     handleCloseTooltip();
   };
+
   const handleAction = async (
     action: "unavailable" | "unreachable" | "preferable" | "delete" | "vacation",
     startDate: Date,
