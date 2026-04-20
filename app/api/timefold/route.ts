@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     await prisma.$connect();
 
     const { employeeId, month } = await req.json();
-
+    
     try {
       // Fetch employees with their availabilities and roles
       // Fetch all employees with their user information
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
           const retryText = await retryResponse.text();
           statusData = JSON.parse(retryText);
         }
-
+        
         return { [role]: statusData };
       });
 
@@ -231,8 +231,8 @@ function generateMonthlyShifts(
   const employeesInRole = allEmployees.filter(emp => emp.roles.includes(role));
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
+    const date = new Date(Date.UTC(year, month, day, 0, 0, 0));
+    const dayOfWeek = date.getUTCDay();
     const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
       dayOfWeek
     ];
@@ -285,7 +285,7 @@ function generateMonthlyShifts(
            if (shouldSplitShift && splitHourString) {
               const splitHour = parseInt(splitHourString.split(':')[0], 10);
 
-              const midTime = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), splitHour, 0, 0);
+              const midTime = new Date(Date.UTC(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), splitHour, 0, 0));
               const requiredGenders = [];
               if (shift.gender) {
                 const shiftGenders: string[] = typeof shift.gender === 'string' && shift.gender.includes(',')
@@ -363,18 +363,23 @@ function parseShiftTimes(
   const [startHour, startMinute, startSecond] = startTimeStr.split(":").map(Number);
   const [endHour, endMinute, endSecond] = endTimeStr.split(":").map(Number);
 
-  const startTime = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
+  const startTime = new Date(Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
       startHour,
       startMinute,
       startSecond
-    );
+    ));
 
-  let endTime = 
-    new Date(date.getFullYear(), date.getMonth(), date.getDate(), endHour, endMinute, endSecond);
-
+  let endTime = new Date(Date.UTC(
+      date.getUTCFullYear(), 
+      date.getUTCMonth(), 
+      date.getUTCDate(), 
+      endHour, 
+      endMinute,
+      endSecond
+    ));
   // If end time is earlier than start time, assume it goes to the next day
   if (endTime <= startTime) {
     endTime = new Date(endTime.getTime() + 24 * 60 * 60 * 1000);

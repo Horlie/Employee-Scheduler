@@ -6,23 +6,28 @@ export async function POST(request: Request) {
     await prisma.$connect();
 
     const { employeeId, startDate, finishDate, status, isFullDay } = await request.json();
+
+    const start = new Date(startDate);
+    const finish = new Date(finishDate);
+
     const availability = await prisma.employeeAvailability.upsert({
       where: {
         employeeId_startDate: {
           employeeId: parseInt(employeeId),
-          startDate: convertLocalDateToUTCIgnoringTimezone(new Date(startDate)),
+          startDate: start,
         },
       },
-      update: { finishDate: convertLocalDateToUTCIgnoringTimezone(new Date(finishDate)), status },
+      update: { 
+        finishDate: finish, status, isFullDay: isFullDay },
       create: {
         employeeId: parseInt(employeeId),
-        startDate: convertLocalDateToUTCIgnoringTimezone(new Date(startDate)),
-        finishDate: convertLocalDateToUTCIgnoringTimezone(new Date(finishDate)),
+        startDate: start,
+        finishDate: finish,
         status,
         isFullDay: isFullDay,
       },
     });
-
+    
     return NextResponse.json({ availability });
   } catch (error) {
     console.error("Error updating employee availability:", error);

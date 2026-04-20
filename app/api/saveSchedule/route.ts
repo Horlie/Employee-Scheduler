@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
 
     await prisma.$transaction(async (tx) => {
-      const deleted = await tx.timefoldShift.deleteMany({
+      await tx.timefoldShift.deleteMany({
         where: {
           userId: Number(employeeId),
           month: Number(month),
@@ -61,8 +61,8 @@ export async function POST(request: Request) {
             userId: Number(employeeId),
             employeeId: dbEmployeeId,
             isFullDay: Boolean(shift.isFullDay),
-            start: new Date(shift.start),
-            end: new Date(shift.end),
+            start: new Date(shift.start.endsWith('Z') ? shift.start : shift.start + 'Z'),
+            end: new Date(shift.end.endsWith('Z') ? shift.end : shift.end + 'Z'),
             month: Number(month),
             role: shift.requiredSkill || roleKey || null
           });

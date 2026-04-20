@@ -44,16 +44,21 @@ const EmployeeEventTooltip: React.FC<EmployeeEventTooltipProps> = ({
     if (isMultiMode && onMultiAction) {
       onMultiAction(action, startTime, endTime, isFullDay);
     } else if (employee && date && onAction) {
-      const startDate = new Date(date);
-      const finishDate = new Date(date);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const day = date.getDate();
+
+      let startDate: Date;
+      let finishDate: Date;
+
       if (isFullDay) {
-        startDate.setHours(0, 0, 0, 0);
-        finishDate.setHours(23, 59, 59, 999);
+        startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
+        finishDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
       } else {
         const [startHours, startMinutes] = startTime.split(":").map(Number);
         const [endHours, endMinutes] = endTime.split(":").map(Number);
-        startDate.setHours(startHours, startMinutes, 0, 0);
-        finishDate.setHours(endHours, endMinutes, 0, 0);
+        startDate = new Date(Date.UTC(year, month, day, startHours, startMinutes, 0));
+        finishDate = new Date(Date.UTC(year, month, day, endHours, endMinutes, 0));
       }
       onAction(action, startDate, finishDate, isFullDay);
     }
