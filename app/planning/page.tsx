@@ -7,7 +7,6 @@ import { Employee, EmployeeAvailability } from "../types/scheduler";
 import { useRouter } from "next/navigation";
 import { useEmployee } from "../context/EmployeeContext";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { format } from "date-fns";
 
 export default function Planning() {
   const {
@@ -41,9 +40,7 @@ export default function Planning() {
       const newCellColors: Record<string, string> = {};
       
       availabilityData.forEach((availability: EmployeeAvailability) => {
-        const dateObj = new Date(availability.startDate);
-        const dateStr = format(dateObj, "yyyy-MM-dd");
-
+        const dateStr = new Date(availability.startDate).toISOString().split("T")[0];
         const cellKey = `${availability.employeeId}-${dateStr}`;
         
         switch (availability.status) {
@@ -117,10 +114,10 @@ export default function Planning() {
       const startDate = new Date(availability.startDate);
       const finishDate = new Date(availability.finishDate);
       if (
-        startDate.getHours() === 0 &&
-        startDate.getMinutes() === 0 &&
-        finishDate.getHours() === 23 &&
-        finishDate.getMinutes() === 59
+        startDate.getUTCHours() === 0 &&
+        startDate.getUTCMinutes() === 0 &&
+        finishDate.getUTCHours() === 23 &&
+        finishDate.getUTCMinutes() === 59
       ) {
         newIsFullDay.set(Number(availability.id), true);
       }
